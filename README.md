@@ -32,7 +32,7 @@ which is a small fragment of C++ used in the course I mentioned above:
 | 0     | x=e                  | right | assignment \(3\)        |
 
 # Limitations
-- String type is not included
-- Double type is not included
+- String type is not included in grammar
+- Double type is not included in grammar
 - No String literals are allowed
 

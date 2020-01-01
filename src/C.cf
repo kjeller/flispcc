@@ -1,0 +1,100 @@
+--	+-----~Course~----+
+--	|     Dat151      |
+--	|     Lab 1:      |
+--	|     Parser      |
+--	+-----~Authors~---+
+--	|  Karl Strålman  |
+--	| Tobias Campbell |
+--	+-----------------+
+-- Modified for flispcc project by Karl Strålman
+
+--------------~Definitions~------------------------
+--A program is a sequence of definitions
+Prg. Program ::= [Def];
+terminator Def "" ;
+
+-- A C++  program can contain comments, 
+-- there are two different types of comments.
+
+comment "//";
+comment "/*" "*/";
+comment "#";
+
+-- Function: <type> <identifier>(<params>) {<statements>} 
+DFunc. 	Def 	::= Type Id "(" [Arg] ")" "{" [Stm] "}";
+
+-- comma separated arguments
+separator Arg ",";
+terminator Stm "";
+
+-- Argument declaration w/ a type and identifier
+ADecl. Arg ::= Type Id;
+
+----------------~Statements~------------------------
+-- Expressions followed by ";" can be used as a stm
+SExp.	 		Stm 	::= Exp ";";
+SDecls. 	Stm 	::= Type [Id] ";";
+SInit.		Stm 	::= Type Id "=" Exp ";";
+SReturn. 	Stm 	::= "return" Exp ";";
+SWhile. 	Stm 	::= "while" "(" Exp ")" Stm;
+SBlock. 	Stm 	::= "{" [Stm] "}";
+SIfElse. 	Stm 	::= "if" "(" Exp ")" Stm "else" Stm;
+
+-- Id in seq. separated by ","
+separator nonempty Id ",";
+
+--------------~Expressions~---------------
+--| Level | Expression forms     | Assoc | Explanation             |
+--|-------|----------------------|-------|-------------------------|
+--| 6     | literal              | \-    | literal \(2\)           |
+--| 6     | identifier x         | \-    | variable \(3\)          |
+--| 6     | x\(e,\.\.\.,e\)      | none  | function call \(3\)     |
+--| 6     | x\+\+, x\-\-         | none  | post in/decrement \(3\) |
+--| 6     | \+\+x, \-\-x         | none  | pre in/decrement \(3\)  |
+--| 5     | e\*e, e/e            | left  | mult, div \(3\)         |
+--| 4     | e\+e, e\-e           | left  | add, sub \(3\)          |
+--| 3     | e<e, e>e, e>=e, e<=e | none  | comparison \(3\)        |
+--| 3     | e==e, e\!=e          | none  | \(in\)equality \(3\)    |
+--| 2     | e&&e                 | left  | conjunction \(3\)       |
+--| 1     | e\|\|e               | left  | disjunction \(3\)       |
+--| 0     | x=e                  | right | assignment \(3\)        |
+
+EInt. 		Exp6 ::= Integer;
+--EDouble. 	Exp6 ::= Double;
+ETrue. 		Exp6 ::= "true";
+EFalse. 	Exp6 ::= "false";
+EId. 			Exp6 ::= Id;
+
+ECall. Exp6 ::= Id "(" [Exp] ")";
+
+EPIncr. Exp6 ::= Id "++";
+EPDecr. Exp6 ::= Id "--";
+
+EIncr. 	Exp6 ::= "++" Id;
+EDecr. 	Exp6 ::= "--" Id;
+
+EMul. Exp5 	::= Exp5 "*"  Exp6;
+EDiv. Exp5 	::= Exp5 "/"  Exp6;
+EAdd. Exp4 	::= Exp4 "+"  Exp5;
+ESub. Exp4 	::= Exp4 	"-" Exp5;
+ELt. 	Exp3	::= Exp4 	"<" Exp4;
+EGt. 	Exp3 	::= Exp4 ">" 	Exp4;
+ELEq. Exp3 	::= Exp4 "<=" Exp4;
+EGeq. Exp3 	::= Exp4 ">=" Exp4;
+EEq. 	Exp3	::= Exp4 "==" Exp4;
+ENeq. Exp3 	::= Exp4 "!=" Exp4;
+EAnd. Exp2 	::= Exp2 "&&" Exp3;
+EOr. 	Exp1 	::= Exp1 "||" Exp2;
+EAss. Exp 	::= Id   "="  Exp;
+
+coercions Exp 6;
+separator Exp ",";
+
+------------~Types~------------
+TBool.    Type ::= "bool";
+TInt.     Type ::= "int";
+TVoid.    Type ::= "void";
+
+-- Id token.
+token Id (letter (letter | digit | '_')*);
+
