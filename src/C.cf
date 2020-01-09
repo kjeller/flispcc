@@ -13,6 +13,7 @@
 Prg. Program ::= [Def];
 terminator Def "" ;
 
+
 -- A C++  program can contain comments, 
 -- there are two different types of comments.
 
@@ -22,6 +23,10 @@ comment "#";
 
 -- Function: <type> <identifier>(<params>) {<statements>} 
 DFunc. 	Def 	::= Type Id "(" [Arg] ")" "{" [Stm] "}";
+
+-- Global variable
+-- only allow SDecls and SInit
+DGlob. Def ::= Stm;
 
 -- comma separated arguments
 separator Arg ",";
@@ -93,6 +98,7 @@ separator Exp ",";
 ------------~Types~------------
 TBool.    Type ::= "bool";
 TInt.     Type ::= "int";
+TString.  Type ::= "string";
 TVoid.    Type ::= "void";
 
 -- Id token.

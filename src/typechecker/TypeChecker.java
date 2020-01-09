@@ -22,13 +22,15 @@ public class TypeChecker implements
   final Type BOOL   = new TBool();
   final Type VOID   = new TVoid();
 
-  TreeMap<String, FuncType> signatures;    // function signatures  TreeMap..
+  TreeMap<String, FuncType> signatures;          // function signatures  TreeMap..
   LinkedList<TreeMap<String, Type>> context;     // blocks LinkedList<TreeMap..
+  TreeMap<String, Type> globalvars;              // global variables
 
   /* Entry point for typechecker */
   public Program typecheck(Program p) {
     context = new LinkedList<>();
     signatures = new TreeMap<String, FuncType>();
+    globalvars = new TreeMap<String, Type>();
     p.accept(this, null);
     return p;
   }
@@ -39,7 +41,11 @@ public class TypeChecker implements
    * need to get the first one.
    * */
   public Type lookupVar(String id) {
-     for (Map<String, Type> m : context) {
+    Type gt = globalvars.get(id);
+    if(gt != null)
+      return gt;
+
+    for (Map<String, Type> m : context) {
       Type ret = m.get(id);
       if (ret != null)
         return ret;
@@ -52,10 +58,24 @@ public class TypeChecker implements
   public void addVar(String id, Type t) {
     if(t == null)
       throw new TypeException("undefined type");
+
+    // check global context first
+    if(globalvars.containsKey(id))
+      throw new TypeException(String.format("Variable already defined: %s.", id));
+
     Map<String, Type> ctx = context.getFirst();
     if(ctx.containsKey(id))
-       throw new TypeException(String.format("Duplicate function found: %s.", id));
+       throw new TypeException(String.format("Variable already defined: %s.", id));
     ctx.put(id, t);
+  }
+
+  public void addGlobal(String id, Type t) {
+    if(t == null)
+      throw new TypeException("undefined type");
+
+     if(globalvars.containsKey(id))
+       throw new TypeException(String.format("Global variable already defined: %s", id));
+     globalvars.put(id, t);
   }
 
   /* Returns function types  */
@@ -136,6 +156,8 @@ public class TypeChecker implements
     e1.setType(checkNumber(e1.accept(this, null)));
     e2.setType(checkNumber(e2.accept(this, null)));
 
+
+    // Subtyping if ever needed.
     // e1 == e2
     // --------
     // 1.0 == 1
@@ -227,8 +249,10 @@ public class TypeChecker implements
     // Set global context
     context.addFirst(new TreeMap());
 
-    for (Def d : p.listdef_)
-      addSignatures((DFunc)d);
+    for (Def d : p.listdef_) {
+      if(d instanceof DFunc)
+        addSignatures((DFunc)d);
+    }
 
     // go through functions defs
     for(Def d : p.listdef_) {
@@ -279,6 +303,25 @@ public class TypeChecker implements
   public void addSignatures(DFunc p) {
     FuncType currFunc = new FuncType(p.type_, p.listarg_);
     addSignature(p.id_, currFunc);
+  }
+
+  /* Global variables handling, only SDecls and SInit allowed */
+  public Def visit(DGlob p, Void arg) {
+    if(p.stm_ instanceof SDecls) {
+      SDecls stm = (SDecls) p.stm_;
+      for(String s : stm.listid_)
+        addGlobal(s, stm.type_);
+      return null;
+    }
+
+    if(p.stm_ instanceof SInit) {
+      SInit stm = (SInit) p.stm_;
+      addGlobal(stm.id_, stm.type_);
+      stm.exp_.accept(this, null); // initialize
+      return null;
+    }
+
+    throw new TypeException("Statement not allowed in global scope");
   }
 
   /*================== Function Args =================== */
