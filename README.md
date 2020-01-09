@@ -31,8 +31,20 @@ which is a small fragment of C++ used in the course I mentioned above:
 | 1     | e\|\|e               | left  | disjunction \(3\)       |
 | 0     | x=e                  | right | assignment \(3\)        |
 
+# Installation
+....TO BE ADDED
+  Linux
+    Add QAflisp to PATH..
+
+  Windows
+    Add QAflisp to PATH
+
+Make it yourself from source:
+....TO BE ADDED
+
+The Assembler QAflisp can be downloaded from [here](http://www.gbgmv.se/html/digiflisp.html) (it is included with digiflisp). 
+
 # Limitations
-- String type is not included in grammar
-- Double type is not included in grammar
-- No String literals are allowed
+- String type and String literals are not yet supported
+- Double type will not be supported
 
