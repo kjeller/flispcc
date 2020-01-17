@@ -1,16 +1,19 @@
 # ======== Environment ========
-BIN_DIR = ../bin
+BUILD_DIR = ../build
 JAVAC = javac
-JAVAC_FLAGS = -sourcepath .
+JAVAC_FLAGS = -d ${BUILD_DIR}
 JAVA = java
+JAR = jar
+JAR_FLAGS = -cf flispcc.jar *
 
 javac = ${JAVAC} ${JAVAC_FLAGS}
 java = ${JAVA} ${JAVA_FLAGS}
+jar = ${JAR} ${JAR_FLAGS}
 
 CUPFILE = C/_cup.cup
 # =============================
 
-.PHONY: default clean
+.PHONY: default build clean
 
 default: Main.class
 
@@ -52,6 +55,14 @@ C/Test.class : C/Test.java C/parser.class C/sym.class C/Yylex.class
 %.class: %.java
 	${javac} $<
 
+# Build into jar
+build: default
+	${jar} 
+
+
+
+
+# Cleans directories from class files
 clean: 
 	-rm -f *.class
 	-rm -f typechecker/*.class

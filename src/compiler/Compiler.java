@@ -11,7 +11,7 @@ public class Compiler implements
   Def.Visitor<Void, Void>,
   Arg.Visitor<Void, Void>,
   Stm.Visitor<Void, Void>,
-  Exp.Visitor<Void, Void>
+  Exp.Visitor<Void, Exp>
 {
   // The output of the compiler is a list of strings.
   LinkedList<String> output;
@@ -37,7 +37,6 @@ public class Compiler implements
 
   // Built-in types
   final Type INT    = new TInt();
-  //final Type DOUBLE = new TDouble();
   final Type BOOL   = new TBool();
   final Type VOID   = new TVoid();
 
@@ -48,28 +47,13 @@ public class Compiler implements
     output = new LinkedList();
 
     // Output boilerplate
-    output.add(".class public " + name + "\n");
-    output.add(".super java/lang/Object\n");
-    output.add("\n");
-    output.add(".method public <init>()V\n");
-    output.add("  .limit locals 1\n");
-    output.add("\n");
-    output.add("  aload_0\n");
-    output.add("  invokespecial java/lang/Object/<init>()V\n");
-    output.add("  return\n");
-    output.add("\n");
-    output.add(".end method\n");
-    output.add("\n");
-    output.add(".method public static main([Ljava/lang/String;)V\n");
-    output.add("  .limit locals 1\n");
-    output.add("  .limit stack  1\n");
-    output.add("\n");
-    output.add("  invokestatic " + name + "/main()I\n");
-    output.add("  pop\n");
-    output.add("  return\n");
-    output.add("\n");
-    output.add(".end method\n");
-    output.add("\n");
+    output.add(";;--------------------------------+");
+    output.add(";; Start flispcc assembly output  |");
+    output.add(";; flisp c compiler  rev 1        |");
+    output.add(";; Command: flispcc ...           |");
+    output.add(";; Compiled: Date ..              |");
+    output.add(";; Author: Karl Strålman          |");
+    output.add(";;--------------------------------+"); 
 
     sig = new TreeMap();
 
@@ -77,22 +61,13 @@ public class Compiler implements
     ListArg intArg = new ListArg();
     intArg.add(new ADecl(INT, "x"));
 
-    ListArg doubleArg = new ListArg();
-    doubleArg.add(new ADecl(DOUBLE, "x"));
-
     sig.put("printInt",
         new Func("Runtime/printInt",
           new FunType(VOID, intArg)));
-    sig.put("printDouble",
-        new Func("Runtime/printDouble",
-          new FunType(VOID, doubleArg)));
+
     sig.put("readInt",
         new Func("Runtime/readInt",
           new FunType(INT, new ListArg())));
-    sig.put("readDouble",
-        new Func("Runtime/readDouble",
-          new FunType(DOUBLE, new ListArg())));
-
     // Add user-defined functions
     for(Def d : ((Prg)p).listdef_) {
       DFunc def = (DFunc)d;
@@ -176,11 +151,7 @@ public class Compiler implements
   public void addVar(String id, Type t) {
     ctx.peek().put(id, new CtxEntry(t, nextLocal));
     nextLocal++;
-    limitLocals++;
-    if(t.equals(DOUBLE)){
-      nextLocal++;
-      limitLocals++;
-    }
+    limitLocals++; 
   }
 
   public Label newLabel() {
@@ -188,11 +159,7 @@ public class Compiler implements
   }
 
   public Type arithExp(Exp e1, Exp e2) {
-    if(e1.isSubType || e2.isSubType)
-      return DOUBLE;
-    if(e1.getType().equals(INT) && e1.getType().equals(INT))
       return INT;
-    return DOUBLE;
   }
 
   /*================ Program ===================*/
@@ -344,37 +311,27 @@ public class Compiler implements
   }
 
   public Void visit(SReturn p, Void arg) {
-    emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_);
-    if (p.exp_.isSubType) {
-      emit(new I2D());
-      emit(new Return(DOUBLE));
-    } else
-      emit(new Return(p.exp_.getType()));
+    new RuntimeException("Not yet implemented"); 
     return null;
   }
 
   /* ==================== Expressions ==================== */
   /* Literals */
-  public Void visit(EInt p, Void arg) {
-  	emit(new Ldc(INT, p.integer_));
+  public Void visit(EInt p, Exp arg) {
     return null;
   }
-  public Void visit(EDouble p, Void arg) {
-    emit(new Ldc(DOUBLE, p.double_));
-    return null;
-  }
-  public Void visit(ETrue p, Void arg) {
+ 
+  public Void visit(ETrue p, Exp arg) {
     emit(new IConst(1));
 		return null;
   }
-  public Void visit(EFalse p, Void arg) {
+  public Void visit(EFalse p, Exp arg) {
 		emit(new IConst(0));
     return null;
   }
 
   /* Variable */
-  public Void visit(EId p, Void arg) {
+  public Void visit(EId p, Exp arg) {
     emit(new Comment(PrettyPrinter.print(p)));
 		CtxEntry entry = lookupVar(p.id_);
     emit(new Load(entry.type, entry.addr));
@@ -382,24 +339,24 @@ public class Compiler implements
   }
 
   /* Arithmetic operations */
-  public Void visit(EAdd p, Void arg) {
+  public Void visit(EAdd p, Exp arg) {
     compile(p.exp_1, p.exp_2);
     emit(new Add(arithExp(p.exp_1, p.exp_2)));
 		return null;
   }
-  public Void visit(ESub p, Void arg) {
+  public Void visit(ESub p, Exp arg) {
     emit(new Comment(PrettyPrinter.print(p)));
     compile(p.exp_1, p.exp_2);
     emit(new Sub(arithExp(p.exp_1, p.exp_2)));
 		return null;
   }
-  public Void visit(EMul p, Void arg) {
+  public Void visit(EMul p, Exp arg) {
     emit(new Comment(PrettyPrinter.print(p)));
     compile(p.exp_1, p.exp_2);
     emit(new Mul(arithExp(p.exp_1, p.exp_2)));
     return null;
   }
-  public Void visit(EDiv p, Void arg) {
+  public Void visit(EDiv p, Exp arg) {
     emit(new Comment(PrettyPrinter.print(p)));
     compile(p.exp_1, p.exp_2);
     emit(new Div(arithExp(p.exp_1, p.exp_2)));
@@ -408,7 +365,7 @@ public class Compiler implements
 
   /* Logic operations */
 
-  public Void visit(EOr p, Void arg) {
+  public Void visit(EOr p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     emit(new Push(INT, 1));
@@ -424,7 +381,7 @@ public class Compiler implements
     emit(new Target(ltrue));
 		return null;
   }
-  public Void visit(EAnd p, Void arg) {
+  public Void visit(EAnd p, Exp arg) {
     Label lfalse = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     emit(new Push(INT, 0));
@@ -441,7 +398,7 @@ public class Compiler implements
 		return null;
   }
 
-   public Void visit(ELt p, Void arg) {
+   public Void visit(ELt p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -461,7 +418,7 @@ public class Compiler implements
    	return null;
   }
 
-  public Void visit(EGt p, Void arg) {
+  public Void visit(EGt p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -480,7 +437,7 @@ public class Compiler implements
     emit(new Target(ltrue));
    	return null;
   }
-  public Void visit(ENeq p, Void arg) {
+  public Void visit(ENeq p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -500,7 +457,7 @@ public class Compiler implements
    	return null;
   }
 
-  public Void visit(EEq p, Void arg) {
+  public Void visit(EEq p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -519,7 +476,7 @@ public class Compiler implements
     emit(new Target(ltrue));
    	return null;
   }
-  public Void visit(EGeq p, Void arg) {
+  public Void visit(EGeq p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -538,7 +495,7 @@ public class Compiler implements
     emit(new Target(ltrue));
    	return null;
   }
-  public Void visit(ELEq p, Void arg) {
+  public Void visit(ELEq p, Exp arg) {
     Label ltrue = newLabel();
     emit(new Comment(PrettyPrinter.print(p)));
     Type t1 = p.exp_1.getType();
@@ -557,21 +514,8 @@ public class Compiler implements
     emit(new Target(ltrue));
    	return null;
   }
-  public Void visit(EDecr p, Void arg) {
+  public Void visit(EDecr p, Exp arg) {
 		CtxEntry entry = lookupVar(p.id_);
-    emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Load(entry.type, entry.addr));
-    if(entry.type.equals(INT))
-      emit(new Ldc(INT, 1));
-    else
-      emit(new Ldc(DOUBLE, 1.0));
-    emit(new Sub(entry.type));
-    emit(new Store(entry.type, entry.addr));
-    emit(new Load(entry.type, entry.addr));
-    return null;
-  }
-  public Void visit(EIncr p, Void arg) {
-  	CtxEntry entry = lookupVar(p.id_);
     emit(new Comment(PrettyPrinter.print(p)));
     emit(new Load(entry.type, entry.addr));
     if(entry.type.equals(INT))
@@ -583,54 +527,27 @@ public class Compiler implements
     emit(new Load(entry.type, entry.addr));
     return null;
   }
-  public Void visit(EPDecr p, Void arg) {
-		CtxEntry entry = lookupVar(p.id_);
-    emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Load(entry.type, entry.addr));
-    emit(new Load(entry.type, entry.addr));
-    if(entry.type.equals(INT))
-      emit(new Ldc(INT, 1));
-    else
-      emit(new Ldc(DOUBLE, 1.0));
-    emit(new Sub(entry.type));
-    emit(new Store(entry.type, entry.addr));
+  public Void visit(EIncr p, Exp arg) {
+  	throw new RuntimeException("Not yet implemented");
     return null;
   }
-  public Void visit(EPIncr p, Void arg) {
-		CtxEntry entry = lookupVar(p.id_);
-    emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Load(entry.type, entry.addr));
-    emit(new Load(entry.type, entry.addr));
-    if(entry.type.equals(INT))
-      emit(new Ldc(INT, 1));
-    else
-      emit(new Ldc(DOUBLE, 1.0));
-    emit(new Add(entry.type));
-    emit(new Store(entry.type, entry.addr));
+  public Void visit(EPDecr p, Exp arg) {
+		throw new RuntimeException("Not yet implemented");
+    return null;
+  }
+  public Void visit(EPIncr p, Exp arg) {
+		throw new RuntimeException("Not yet implemented");
     return null;
   }
 
-  public Void visit(ECall p, Void arg) {
-    emit(new Comment(PrettyPrinter.print(p)));
-    Func f = lookupFunc(p.id_);
-    for(Exp e : p.listexp_) {
-      compile(e);
-      if(e.isSubType)
-        emit(new I2D());
-    }
-    emit(new Call(f));
+  public Void visit(ECall p, Exp arg) {
+    throw new RuntimeException("Not yet implemented");
 		return null;
   }
 
   /* Assign */
-  public Void visit(EAss p, Void arg) {
-  	CtxEntry entry = lookupVar(p.id_);
-    emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_);
-    if(p.exp_.isSubType)
-      emit(new I2D());
-    emit(new Store(entry.type, entry.addr));
-    emit(new Load(entry.type, entry.addr));
+  public Void visit(EAss p, Exp arg) {
+  	throw new RuntimeException("Not yet implemented");
 		return null;
   }
 }

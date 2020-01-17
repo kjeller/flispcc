@@ -38,23 +38,57 @@ class Label {
 }
 
 /* ======= CODE ======= */
-abstract class Code {
-    public abstract <R> R accept (CodeVisitor<R> v);
+// Addressing methods that may be used
+enum AddrMethod {
+  IMMEDIATE, ABSOLUTE, NS 
+}
+
+class Code {
+  public AddrMethod m;
+  public int adr;
+  public int data;
+  public int index;
+
+  public Code(AddrMethod m, int x) {
+    this.m = m;
+     switch(m) {
+      case AddrMethod.IMMEDIATE:
+        data = x;
+        break;
+      case AddrMethod.ABSOLUTE:
+        adr = x;
+        break;
+      case AddrMethod.NS:
+        index = x;
+        break;
+    }
+  }
+
+  public <R> R accept (CodeVisitor<R> v) {
+    return null;
+  }
 }
 
 class Comment extends Code {
   public String comment;
-  public Comment (String c) { comment = c; }
+  public Comment(String c) { comment = c; }
   public <R> R accept (CodeVisitor<R> v) {
     return v.visit(this);
   }
 }
 
-interface CodeVisitor<R> {
-  public R visit (Comment c);
+class Add extends Code {
+  public Add(AddrMethod m, int x) {
+   super(m, x);
+  }
 
+  public <R> R accept (CodeVisitor<R> v) {
+    return v.visit(this);
+  }
 }
 
+
+interface CodeVisitor<R> { public R visit (Comment c);}
 class CodeToAssembler implements CodeVisitor<String> {
   /* ===== Comment ===== */
   public String visit(Comment c) {
@@ -63,6 +97,16 @@ class CodeToAssembler implements CodeVisitor<String> {
 
   /* ===== Integer arithmetic ===== */
   public String visit(Add c) {
-    return "ADDA \n";
+    switch(m) {
+      case AddrMethod.IMMEDIATE:
+        return String.format("ADDA #% \n", c.data);
+        break;
+      case AddrMethod.ABSOLUTE:
+        return String.format("ADDA %d \n", c.adr);
+        break;
+      case AddrMethod.NS:
+        return String.format("ADDA %d, SP\n");
+        break;
+    }
   }
 }

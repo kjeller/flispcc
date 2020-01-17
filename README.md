@@ -1,12 +1,12 @@
 # FLISPCC - Flexible Instruction Set Processor C Compiler
-- is a C compiler written in Java for the FLISP processor, which is an 8-bit processor used in introductionary courses
+- is a C (subset) compiler written in Java for the FLISP processor, which is an 8-bit processor used in introductionary courses
 to computer engineering for Chalmers University of Technology. This compiler make use of the [BNFC tool](https://github.com/BNFC/bnfc),
 which generates a compiler front-end from a labeled BNF grammar.
 
 # Why use BNFC?
-The FLISP processor is very similar to the Motorola 68HC11 microcontroller in both architecture and instructions, which led
-me to believe that it was easier to translate an [exisiting compiler](https://www.gnu.org/software/m68hc11/m68hc11_gcc.html) for the 68HC11
-into FLISP instructions. After some research I realized that it was harder than I thought.
+The FLISP processor is very similar to the Motorola 68HC11 microcontroller since both are accumulator-based (one-address)
+CPUs with similar instructions and architechture. This led me to believe that it was easier to translate an [exisiting compiler](https://www.gnu.org/software/m68hc11/m68hc11_gcc.html) for the 68HC11
+into FLISP instructions. After some research I realized that it was harder than I thought, learning how GCC works.
 In the course DAT151 "Programming Language Technology" I recently took, we used context-free grammars where I learned BNF.
 
 # The C language

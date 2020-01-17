@@ -5,14 +5,14 @@ import C.*;
 import C.Absyn.*;
 import typechecker.TypeChecker;
 import typechecker.TypeException;
-import compiler.Compiler;
+//import compiler.Compiler;
 
 public class Main {
    public static void main(String args[]) {
 
     // Ensure that we are called with a single argument.
     if (args.length != 1) {
-      System.err.println("Usage: Main  <SourceFile>");
+      System.err.println("Usage: flispcc <SourceFile>");
       System.exit(1);
     }
 
@@ -34,8 +34,8 @@ public class Main {
       Program typedTree = new TypeChecker().typecheck(parseTree);
 
       // Compile into assembler code
-      String jtext = new Compiler().compile(className, typedTree);
-
+      //String jtext = new Compiler().compile(className, typedTree);
+      String jtext = "Not implemented yet";
       // Write .j file to same directory where source file was.
       PrintWriter writer = new PrintWriter(jFile);
       writer.print(jtext);
@@ -60,7 +60,7 @@ public class Main {
       System.out.println("At line " + String.valueOf(l.line_num())
                  + ", near \"" + l.buff() + "\" :");
       System.out.println("     " + e.getMessage());
-      e.printStackTrace();
+      //e.printStackTrace();
       System.exit(1);
     }
   }
