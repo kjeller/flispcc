@@ -5,7 +5,7 @@ import C.*;
 import C.Absyn.*;
 import typechecker.TypeChecker;
 import typechecker.TypeException;
-//import compiler.Compiler;
+import compiler.Compiler;
 
 public class Main {
    public static void main(String args[]) {
@@ -20,7 +20,7 @@ public class Main {
     String fileCore  = stripSuffix(srcFile);   // Ex: path/to/file
     String dir       = stripFileName(srcFile); // Ex: path/to  or "."
     String className = stripPath(fileCore);    // Ex:         file
-    String jFile     = fileCore + ".j";        // Ex: path/to/file.j
+    String out       = fileCore + ".flisp";    // Ex: path/to/file.flisp
 
     Yylex  l = null;
     try {
@@ -34,10 +34,10 @@ public class Main {
       Program typedTree = new TypeChecker().typecheck(parseTree);
 
       // Compile into assembler code
-      //String jtext = new Compiler().compile(className, typedTree);
-      String jtext = "Not implemented yet";
+      String jtext = new Compiler().compile(className, typedTree);
+      
       // Write .j file to same directory where source file was.
-      PrintWriter writer = new PrintWriter(jFile);
+      PrintWriter writer = new PrintWriter(out);
       writer.print(jtext);
       writer.close();
     }
