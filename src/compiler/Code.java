@@ -157,6 +157,16 @@ class Org extends Code {
   }
 }
 
+class Leasp extends Code {
+  public int index;
+  public Leasp(int index) {
+    this.index = index;
+  }
+  public <R> R accept (CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
 interface CodeVisitor<R> { 
   public R visit(Comment c);
   public R visit(Pull c);
@@ -167,6 +177,7 @@ interface CodeVisitor<R> {
   public R visit(Load c);
   public R visit(Store c);
   public R visit(Org c);
+  public R visit(Leasp c);
 }
 
 class CodeToAssembler implements CodeVisitor<String> {
@@ -185,18 +196,18 @@ class CodeToAssembler implements CodeVisitor<String> {
     }
 
     if(s.limit > MAX_STACK_SIZE) 
-      throw new RuntimeException("STACK OVERFLOW.. Exciting compiler.");
+      throw new RuntimeException("STACK OVERFLOW.. Exiting compiler.");
   }
   
   /* ===== Comment ===== */
   public String visit(Comment c) {
-    return String.format(";; %s\n", c.comment);
+    return String.format(";; %s", c.comment);
   }
 
  public String visit(Store c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("STA #% \n", c.data);
+        return String.format("STA #%d \n", c.data);
       case ABSOLUTE:
         return String.format("STA %d \n", c.address);
       case NS:
@@ -208,7 +219,7 @@ class CodeToAssembler implements CodeVisitor<String> {
   public String visit(Load c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("LDA #% \n", c.data);
+        return String.format("LDA #%d \n", c.data);
       case ABSOLUTE:
         return String.format("LDA %d \n", c.address);
       case NS:
@@ -221,7 +232,7 @@ class CodeToAssembler implements CodeVisitor<String> {
   public String visit(Add c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("ADDA #% \n", c.data);
+        return String.format("ADDA #%d \n", c.data);
       case ABSOLUTE:
         return String.format("ADDA %d \n", c.address);
       case NS:
@@ -251,5 +262,9 @@ class CodeToAssembler implements CodeVisitor<String> {
 
   public String visit(Org c) {
     return String.format("ORG %d \n", c.address);
+  }
+
+  public String visit(Leasp c) {
+    return String.format("LEASP %d, SP\n", c.index);
   }
 }

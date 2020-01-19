@@ -119,7 +119,7 @@ public class Compiler implements
   }
 
   public void emit(Code c) {
-    output.add(c.accept(new CodeToAssembler(stack)));
+    output.add(String.format("\t %s", c.accept(new CodeToAssembler(stack))));
   }
   public void pushBlock() {
     ctx.push(new TreeMap());
@@ -173,8 +173,8 @@ public class Compiler implements
     // Reset context specific counters
     nextLocal    = 0;
     limitLocals  = 0;
-    stack.count = 0;
-    stack.limit = 0;
+    stack.count  = 0;
+    stack.limit  = 0;
 
     // Save output from extermination
     LinkedList<String> savedOutput = output;
@@ -185,8 +185,6 @@ public class Compiler implements
     for(Stm s : p.liststm_)
       compile(s);
 
-    emit(new Org(20));
-
     // Fetch new input and add to old
     LinkedList<String> newOutput = output;
     output = savedOutput;
@@ -194,11 +192,15 @@ public class Compiler implements
     // Add to output
     Func f = new Func(p.id_,  new FunType(p.type_, p.listarg_));
     // TODO: do something with function
-
+    
+    emit(new Org(20));
+    emit(new Leasp(-ctx.size()));
+    
     for(String s : newOutput)
-      output.add("\t" + s);
- 
-    emit(new Return());
+      output.add(s);
+    
+    emit(new Leasp(ctx.size()));
+    // Maybe add RTS here 
     return null;
   }
 
@@ -313,6 +315,10 @@ public class Compiler implements
   /* ==================== Expressions ==================== */
   /* Literals */
   public Void visit(EInt p, Exp arg) {
+    if(arg instanceof EAdd)
+      emit(new Add(AddrMethod.IMMEDIATE, p.integer_));
+    else
+      emit(new Load(AddrMethod.IMMEDIATE, p.integer_));  
     return null;
   }
  
@@ -327,6 +333,9 @@ public class Compiler implements
   public Void visit(EId p, Exp arg) {
     emit(new Comment(PrettyPrinter.print(p)));
 		CtxEntry entry = lookupVar(p.id_);
+    if(arg instanceof EAdd)
+      emit(new Add(AddrMethod.NS, entry.addr));
+    else
     emit(new Load(AddrMethod.NS, entry.addr));
     return null;
   }
@@ -334,7 +343,6 @@ public class Compiler implements
   /* Arithmetic operations */
   public Void visit(EAdd p, Exp arg) {
     compile(p.exp_1, p.exp_2);
-    //emit(new Add(arithExp(p.exp_1, p.exp_2)));
 		return null;
   }
   public Void visit(ESub p, Exp arg) {
