@@ -47,13 +47,12 @@ public class Compiler implements
     output = new LinkedList();
 
     // Output boilerplate
-    output.add(";;--------------------------------+\n");
-    output.add(";; Start flispcc assembly output  |\n");
-    output.add(";; flisp c compiler  rev 1        |\n");
-    output.add(";; Command: flispcc ...           |\n");
-    output.add(";; Compiled: Date ..              |\n");
-    output.add(";; Author: Karl Strålman          |\n");
-    output.add(";;--------------------------------+\n"); 
+    output.add(";;----------------------------------------+\n");
+    output.add(";; flispcc assembly output\n");
+    output.add(";; Command: flispcc ...         \n");
+    output.add(String.format(";; Compiled: %s   \n", new Date()));
+    output.add(";; Author: Karl Strålman        \n");
+    output.add(";;----------------------------------------+\n"); 
 
     sig = new TreeMap();
 
@@ -87,7 +86,7 @@ public class Compiler implements
     return jtext.toString();
   }
 
-  /*==== Compilation and helper functions ====*/
+  /*====(AUX) Compilation and helper functions ====*/
 
   public void compile(Program p) {
     p.accept(this, null);
@@ -111,11 +110,7 @@ public class Compiler implements
 
   public void compile(Exp e1, Exp e2) {
     compile(e1);
-    //if(e1.isSubType)
-      //emit(new I2D());
     compile(e2);
-    //if(e2.isSubType)
-      //emit(new I2D());
   }
 
   public void emit(Code c) {
@@ -157,6 +152,10 @@ public class Compiler implements
       return INT;
   }
 
+  public int getVarCount() {
+    return ctx.peek().size();
+  }
+
   /*================ Program ===================*/
   public Void visit(Prg p, Void arg) {
     for(Def d : p.listdef_)
@@ -194,19 +193,19 @@ public class Compiler implements
     // TODO: do something with function
     
     emit(new Org(20));
-    emit(new Leasp(-ctx.size()));
+    emit(new Leasp(-getVarCount()));
     
     for(String s : newOutput)
       output.add(s);
     
-    emit(new Leasp(ctx.size()));
+    emit(new Leasp(getVarCount()));
     // Maybe add RTS here 
     return null;
   }
 
   public Void visit(DGlob p, Void arg) {
     if(p.stm_ instanceof SDecls) {
-      p.stm_.accept(this, null);
+      
       return null;
     }
     throw new RuntimeException("Only global declaration is allowed.");
@@ -323,15 +322,18 @@ public class Compiler implements
   }
  
   public Void visit(ETrue p, Exp arg) {
+    emit(new Load(AddrMethod.IMMEDIATE, 1));
 		return null;
   }
+
   public Void visit(EFalse p, Exp arg) {
+    emit(new Load(AddrMethod.IMMEDIATE, 0));
     return null;
   }
 
   /* Variable */
   public Void visit(EId p, Exp arg) {
-    emit(new Comment(PrettyPrinter.print(p)));
+    //emit(new Comment(PrettyPrinter.print(p)));
 		CtxEntry entry = lookupVar(p.id_);
     if(arg instanceof EAdd)
       emit(new Add(AddrMethod.NS, entry.addr));
@@ -432,6 +434,9 @@ public class Compiler implements
 
   /* Assign */
   public Void visit(EAss p, Exp arg) {
-  	throw new RuntimeException("Not yet implemented");
+    CtxEntry entry = lookupVar(p.id_);
+    compile(p.exp_);
+    emit(new Store(AddrMethod.NS, entry.addr));
+    return null;
   }
 }

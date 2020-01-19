@@ -167,6 +167,12 @@ class Leasp extends Code {
   }
 }
 
+class Fcb extends Code {
+   public <R> R accept (CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
 interface CodeVisitor<R> { 
   public R visit(Comment c);
   public R visit(Pull c);
@@ -201,17 +207,17 @@ class CodeToAssembler implements CodeVisitor<String> {
   
   /* ===== Comment ===== */
   public String visit(Comment c) {
-    return String.format(";; %s", c.comment);
+    return String.format(";; %s\n", c.comment);
   }
 
  public String visit(Store c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("STA #%d \n", c.data);
+        return String.format("STA\t\t#%d \n", c.data);
       case ABSOLUTE:
-        return String.format("STA %d \n", c.address);
+        return String.format("STA\t\t%d \n", c.address);
       case NS:
-        return String.format("STA %d, SP\n", c.index);
+        return String.format("STA\t\t%d, SP\n", c.index);
     }
     return null;
   }
@@ -219,11 +225,11 @@ class CodeToAssembler implements CodeVisitor<String> {
   public String visit(Load c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("LDA #%d \n", c.data);
+        return String.format("LDA\t\t#%d \n", c.data);
       case ABSOLUTE:
-        return String.format("LDA %d \n", c.address);
+        return String.format("LDA\t\t%d \n", c.address);
       case NS:
-        return String.format("LDA %d, SP\n", c.index);
+        return String.format("LDA\t\t%d, SP\n", c.index);
     }
     return null;
   }
@@ -232,11 +238,11 @@ class CodeToAssembler implements CodeVisitor<String> {
   public String visit(Add c) {
     switch(c.m) {
       case IMMEDIATE:
-        return String.format("ADDA #%d \n", c.data);
+        return String.format("ADDA\t#%d \n", c.data);
       case ABSOLUTE:
-        return String.format("ADDA %d \n", c.address);
+        return String.format("ADDA\t%d \n", c.address);
       case NS:
-        return String.format("ADDA %d, SP\n", c.index);
+        return String.format("ADDA\t%d, SP\n", c.index);
     }
     return null;
   }
@@ -261,10 +267,10 @@ class CodeToAssembler implements CodeVisitor<String> {
   }
 
   public String visit(Org c) {
-    return String.format("ORG %d \n", c.address);
+    return String.format("ORG\t\t%d \n", c.address);
   }
 
   public String visit(Leasp c) {
-    return String.format("LEASP %d, SP\n", c.index);
+    return String.format("LEASP\t%d, SP\n", c.index);
   }
 }
