@@ -18,7 +18,6 @@ public class TypeChecker implements
 {
   // Built-in types
   final Type INT    = new TInt();
-  //final Type DOUBLE = new TDouble();
   final Type BOOL   = new TBool();
   final Type VOID   = new TVoid();
 

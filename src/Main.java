@@ -40,6 +40,9 @@ public class Main {
       PrintWriter writer = new PrintWriter(out);
       writer.print(jtext);
       writer.close();
+
+      // Don't know if neccessary
+      //System.out.println(String.format("Compilation successful. Output file: %s", out));
     }
 
     catch (TypeException e) {
@@ -48,7 +51,7 @@ public class Main {
       System.exit(1);
     }
     catch (RuntimeException e) {
-      System.err.println(e.toString());
+      System.err.println(String.format("Compiler error: %s", e.getMessage()));
       System.exit(-1);
     }
     catch (IOException e) {

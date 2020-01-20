@@ -35,6 +35,11 @@ public class Compiler implements
   // Context mapping variable id to their type and address
   LinkedList<Map<String, CtxEntry>> ctx;
 
+  // Mapping global variable id to their type and address
+  // Note: must be in its own map otherwise the local variable count
+  // would be incorrect from getVarCount().
+  Map<String, CtxEntry> global;
+
   // Built-in types
   final Type INT    = new TInt();
   final Type BOOL   = new TBool();
@@ -69,12 +74,15 @@ public class Compiler implements
           new FunType(INT, new ListArg())));
     // Add user-defined functions
     for(Def d : ((Prg)p).listdef_) {
+      if(d instanceof DFunc) {
       DFunc def = (DFunc)d;
       sig.put(def.id_,
           new Func(String.format("%s/%s", name, def.id_),
             new FunType(def.type_, def.listarg_)));
+      }
     }
-
+    // Initialize global variable storage
+    global = new TreeMap<>();
     // Start compiling program
     compile(p);
 
@@ -114,7 +122,12 @@ public class Compiler implements
   }
 
   public void emit(Code c) {
-    output.add(String.format("\t %s", c.accept(new CodeToAssembler(stack))));
+    String formatting = "\t\t";
+    if(c instanceof Target || c instanceof VarTarget)
+      formatting = "";
+
+    output.add(String.format("%s%s", 
+          formatting, c.accept(new CodeToAssembler(stack))));
   }
   public void pushBlock() {
     ctx.push(new TreeMap());
@@ -125,6 +138,12 @@ public class Compiler implements
 
   /* Returns variable entry from ctx map */
   public CtxEntry lookupVar(String id) {
+    // Check global variable first
+    CtxEntry gVar = global.get(id);
+    if(gVar != null)
+      return gVar;
+
+    // Then the local variables from within contexts
     for(Map<String, CtxEntry> m : ctx) {
       CtxEntry e = m.get(id);
       if(e != null)
@@ -139,9 +158,13 @@ public class Compiler implements
 
   /* Adds variable to context map  */
   public void addVar(String id, Type t) {
-    ctx.peek().put(id, new CtxEntry(t, nextLocal));
+    ctx.peek().put(id, new CtxEntry(t, nextLocal, false));
     nextLocal++;
     limitLocals++; 
+  }
+
+  public void addGlobal(String id, Type t) {
+    global.put(id, new CtxEntry(t, 0, true));
   }
 
   public Label newLabel() {
@@ -154,6 +177,10 @@ public class Compiler implements
 
   public int getVarCount() {
     return ctx.peek().size();
+  }
+
+  public int getGlobVarCount() {
+    return global.size();
   }
 
   /*================ Program ===================*/
@@ -190,8 +217,20 @@ public class Compiler implements
 
     // Add to output
     Func f = new Func(p.id_,  new FunType(p.type_, p.listarg_));
-    // TODO: do something with function
+    // TODO: do something with functions
     
+
+    // Global varibles declared here
+    if(getGlobVarCount() > 0) {
+      emit(new Org(0));
+      for(String key : global.keySet()) {
+        // This can be extended when strings are implemented (1 byte per character)
+        emit(new VarTarget(key, new Rmb(1)));
+      }
+      output.add("\n");
+    }
+    
+    // Program starts here
     emit(new Org(20));
     emit(new Leasp(-getVarCount()));
     
@@ -205,10 +244,23 @@ public class Compiler implements
 
   public Void visit(DGlob p, Void arg) {
     if(p.stm_ instanceof SDecls) {
-      
+      SDecls s = (SDecls)p.stm_;
+      for(String id: s.listid_) {
+        if(!s.type_.equals(VOID))
+          addGlobal(id, s.type_);
+       }
       return null;
     }
-    throw new RuntimeException("Only global declaration is allowed.");
+
+   /* Does not work since I do not know when to run exp. 
+    * Exp cannot run outside ORG 20 where the program starts..
+    * if(p.stm_ instanceof SInit) {
+      SInit s = (SInit)p.stm_;
+      compile(s.exp_);
+      addGlobal(s.id_, s.type_);
+      return null;
+    }*/
+    throw new RuntimeException("Only global declarations are allowed.");
   }
 
   /*================== Function Args =================== */

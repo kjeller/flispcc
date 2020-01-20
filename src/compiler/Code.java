@@ -18,10 +18,12 @@ class Stack {
 class CtxEntry {
   final Type type;
   final Integer addr;
+  final boolean global;
 
-  CtxEntry(Type t, Integer i) {
-    type = t;
-    addr = i;
+  CtxEntry(Type type, Integer addr, boolean global) {
+    this.type   = type;
+    this.addr   = addr;
+    this.global = global;
   }
 }
 
@@ -113,6 +115,18 @@ class Target extends Code {
   }
 }
 
+class VarTarget extends Code {
+  public String id;
+  public Code code;
+  public VarTarget(String id, Code code) {
+    this.id = id;
+    this.code = code;
+  }
+  public <R> R accept (CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
 class Comment extends Code {
   public String comment;
   public Comment(String c) { comment = c; }
@@ -167,8 +181,12 @@ class Leasp extends Code {
   }
 }
 
-class Fcb extends Code {
-   public <R> R accept (CodeVisitor<R> v) {
+class Rmb extends Code {
+  int bytes;
+  public Rmb(int bytes) {
+    this.bytes = bytes;
+  }
+  public <R> R accept (CodeVisitor<R> v) {
     return v.visit(this);
   }
 }
@@ -179,11 +197,13 @@ interface CodeVisitor<R> {
   public R visit(Push c);
   public R visit(Add c);
   public R visit(Target c);
+  public R visit(VarTarget c);
   public R visit(Return c);
   public R visit(Load c);
   public R visit(Store c);
   public R visit(Org c);
   public R visit(Leasp c);
+  public R visit(Rmb c);
 }
 
 class CodeToAssembler implements CodeVisitor<String> {
@@ -261,6 +281,11 @@ class CodeToAssembler implements CodeVisitor<String> {
     return String.format("%s:\n", c.label.toString());
   }
 
+  // Label targetting a code instruction
+  public String visit(VarTarget c) {
+    return String.format("%s:\t%s", c.id, c.code.accept(this));
+  }
+
   /* Return from subroutine */
   public String visit(Return c) {
     return "RTS \n";
@@ -272,5 +297,9 @@ class CodeToAssembler implements CodeVisitor<String> {
 
   public String visit(Leasp c) {
     return String.format("LEASP\t%d, SP\n", c.index);
+  }
+
+  public String visit(Rmb c) {
+    return String.format("RMB\t\t%d\n", c.bytes);
   }
 }
