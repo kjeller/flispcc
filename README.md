@@ -12,37 +12,41 @@ In the course DAT151 "Programming Language Technology" I recently took, we learn
 The laborations for the course recommended BNFC to handle the parsing of files. So instead of translating GCC code I choose to write a compiler myself.
 
 # The C language
-Note: Only a subset of C is implemented, since all the features of C11 can not be fully utilized with the FLISP.
-
 The precidence and associativity is directly derived from "C--", 
 which is a small fragment of C++ used in the course I mentioned above:
 
 | Level | Expression forms     | Assoc | Explanation             |
 |-------|----------------------|-------|-------------------------|
-| 6     | literal              | \-    | literal \(2\)           |
-| 6     | identifier x         | \-    | variable \(3\)          |
-| 6     | x\(e,\.\.\.,e\)      | none  | function call \(3\)     |
-| 6     | x\+\+, x\-\-         | none  | post in/decrement \(3\) |
-| 6     | \+\+x, \-\-x         | none  | pre in/decrement \(3\)  |
-| 5     | e\*e, e/e            | left  | mult, div \(3\)         |
-| 4     | e\+e, e\-e           | left  | add, sub \(3\)          |
-| 3     | e<e, e>e, e>=e, e<=e | none  | comparison \(3\)        |
-| 3     | e==e, e\!=e          | none  | \(in\)equality \(3\)    |
-| 2     | e&&e                 | left  | conjunction \(3\)       |
-| 1     | e\|\|e               | left  | disjunction \(3\)       |
-| 0     | x=e                  | right | assignment \(3\)        |
+| 6     | literal              | \-    | literal                 |
+| 6     | identifier x         | \-    | variable                |
+| 6     | x\(e,\.\.\.,e\)      | none  | function call           |
+| 6     | x\+\+, x\-\-         | none  | post in/decrement       |
+| 6     | \+\+x, \-\-x         | none  | pre in/decrement        |
+| 5     | e\*e, e/e            | left  | mult, div               |
+| 4     | e\+e, e\-e           | left  | add, sub                |
+| 3     | e<e, e>e, e>=e, e<=e | none  | comparison              |
+| 3     | e==e, e\!=e          | none  | \(in\)equality          |
+| 2     | e&&e                 | left  | conjunction             |
+| 1     | e\|\|e               | left  | disjunction             |
+| 0     | x=e                  | right | assignment              |
 
 
+Note: Only a subset of C is implemented, since all the features of C11 can not be fully utilized with the FLISP.
 # Datatypes
   TODO
 
 # Limitations
+  TODO
 
 # Installation
-Note: I have only tested installing the compiler on linux, but for windows it should be similar.  
--Linux
+- Linux
   1. Download binary from git or make from source. (Making requires the dependencies that BNFC requires).
-  2. Add QAflisp to PATH:  ```export PATH=$PATH:/usr/share/digiflisp/```
-  3. Now it should work.
+  2. Download digiflisp from [here](http://www.gbgmv.se/html/digiflisp.html). 
+  3. Add QAflisp to PATH:  ```export PATH=$PATH:/usr/share/digiflisp/``` (to the folder where you install digiflisp).
+  4. Now the compiler chain should call the assembler after compilation.
 
-The Assembler QAflisp can be downloaded from [here](http://www.gbgmv.se/html/digiflisp.html) (it is included with digiflisp). 
+- Windows
+  Same as above but add QAflisp to Path environment variable, different procedure but should give same result.
+
+
+Note: I have only tested installing the compiler and running the compiler on Linux.
