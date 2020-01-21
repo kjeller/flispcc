@@ -47,8 +47,13 @@ class Label {
 }
 
 /* ======= CODE ======= */
-// Addressing methods that may be used
-enum AddrMethod { IMMEDIATE, ABSOLUTE, NS }
+/* Addressing methods that may be used:
+/* Immediate - LDA #10
+ * Absolute  - LDA Adr or Load Label
+ * Ns        - LDA N,SP
+ * Inherent  - INCA
+ * */
+enum AddrMethod { IMMEDIATE, ABSOLUTE, NS, INHERENT }
 
 abstract class Code {
   public <R> R accept (CodeVisitor<R> v) {
@@ -82,6 +87,35 @@ class Addressable extends Code {
     this.m = m;
     label = id;
   }
+
+  public Addressable(AddrMethod m) {
+    this.m = m;
+  }
+
+  /* Will correctly format instructions
+   * and make them easier to use in visitor.
+   *
+   * postfix is used for instructions e.g.
+   * INC Adr can be used as INCA
+   * Here the letter 'A' is the postfix.
+   * */
+  public String toString(String ins, String postfix) {
+     switch(m) {
+      case INHERENT: 
+        return String.format("%s%s", ins, postfix);
+      case IMMEDIATE:
+        return String.format("%s\t\t#%d \n", ins,  data);
+      case ABSOLUTE:
+        // Address can both be label and addr
+        if(label.isEmpty())
+          return String.format("%s\t\t%d \n", ins, address);
+        else
+          return String.format("%s\t\t%s \n", ins, label);
+      case NS:
+        return String.format("%s\t\t%d,SP\n", ins, index);
+    }
+    return null;
+  }
 }
 
 class Add extends Addressable {
@@ -92,6 +126,33 @@ class Add extends Addressable {
   public Add(AddrMethod m, String s) {
     super(m, s);
   }
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
+class Inc extends Addressable {
+  public Inc(AddrMethod m, int x) {
+    super(m, x);
+  }
+  public Inc(AddrMethod m, String s) {
+    super(m, s);
+  }
+  public Inc(AddrMethod m) {
+    super(m);
+  } 
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
+class Dec extends Addressable {
+  public Dec(AddrMethod m, int x) {
+    super(m, x);
+  }
+  public Dec(AddrMethod m, String s) {
+    super(m, s);
+  } 
   public <R> R accept(CodeVisitor<R> v) {
     return v.visit(this);
   }
@@ -120,6 +181,20 @@ class Load extends Addressable {
     return v.visit(this);
   }
 }
+
+class Cmp extends Addressable {
+  public Cmp(AddrMethod m, int x) {
+    super(m, x);
+  }
+  public Cmp(AddrMethod m, String s) {
+    super(m, s);
+  }
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
+/* ===========================*/
 
 class Target extends Code {
   public Label label;
@@ -207,6 +282,12 @@ class Rmb extends Code {
   }
 }
 
+class Test extends Code {
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
 /* All branches here */
 class Beq extends Code {
   public Label label;
@@ -285,6 +366,10 @@ interface CodeVisitor<R> {
   public R visit(Org c);
   public R visit(Leasp c);
   public R visit(Rmb c);
+  public R visit(Test c);
+  public R visit(Cmp c);
+  public R visit(Inc c);
+  public R visit(Dec c);
   public R visit(Beq c);
   public R visit(Bge c);
   public R visit(Bgt c);
@@ -315,55 +400,23 @@ class CodeToAssembler implements CodeVisitor<String> {
   
   /* ===== Comment ===== */
   public String visit(Comment c) {
-    return String.format(";; %s\n", c.comment);
+    return String.format(";; %s", c.comment);
   }
 
- public String visit(Store c) {
-    switch(c.m) {
-      case IMMEDIATE:
-        return String.format("STA\t\t#%d \n", c.data);
-      case ABSOLUTE:
-        if(c.label.isEmpty())
-          return String.format("STA\t\t%d \n", c.address);
-        else
-          return String.format("STA\t\t%s \n", c.label);
-      case NS:
-        return String.format("STA\t\t%d,SP\n", c.index);
-    }
-    return null;
+  public String visit(Store c) {
+    return c.toString("STA", null);
   }
 
   public String visit(Load c) {
-    switch(c.m) {
-      case IMMEDIATE:
-        return String.format("LDA\t\t#%d \n", c.data);
-      case ABSOLUTE:
-        if(c.label.isEmpty())
-          return String.format("LDA\t\t%d \n", c.address);
-        else
-          return String.format("LDA\t\t%s \n", c.label);
-      case NS:
-        return String.format("LDA\t\t%d,SP\n", c.index);
-    }
-    return null;
+    return c.toString("LDA", null);
   }
 
   /* ===== Integer arithmetic ===== */
   public String visit(Add c) {
-    switch(c.m) {
-      case IMMEDIATE:
-        return String.format("ADDA\t#%d \n", c.data);
-      case ABSOLUTE:
-         if(c.label.isEmpty())
-          return String.format("ADDA\t\t%d \n", c.address);
-        else
-          return String.format("ADDA\t\t%s \n", c.label);
-      case NS:
-        return String.format("ADDA\t%d,SP\n", c.index);
-    }
-    return null;
+    return c.toString("ADDA", null);
   }
 
+  /* ===== Stack operations ====== */
   public String visit(Push c) {
     incStack();
     return String.format("PSH%s \n", c.reg);
@@ -372,6 +425,18 @@ class CodeToAssembler implements CodeVisitor<String> {
   public String visit(Pull c) {
     decStack();
     return String.format("PUL%s \n", c.reg);
+  }
+
+  public String visit(Leasp c) {
+    return String.format("LEASP\t%d,SP\n", c.index);
+  }
+
+  public String visit(Inc c) {
+    return c.toString("INC", "A");
+  }
+
+  public String visit(Dec c) {
+    return c.toString("DEC", "A");
   }
 
   public String visit(Target c) {
@@ -392,12 +457,16 @@ class CodeToAssembler implements CodeVisitor<String> {
     return String.format("ORG\t\t%d \n", c.address);
   }
 
-  public String visit(Leasp c) {
-    return String.format("LEASP\t%d,SP\n", c.index);
-  }
-
   public String visit(Rmb c) {
     return String.format("RMB\t\t%d\n", c.bytes);
+  }
+
+  public String visit(Test c) {
+    return "TSTA\n";
+  }
+  
+  public String visit(Cmp c) {
+    return c.toString("CMPA", null);
   }
 
   public String visit(Beq c) {

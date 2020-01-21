@@ -297,6 +297,7 @@ public class Compiler implements
 
     emit(new Comment("test if-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
     compile(p.exp_, null);
+    emit(new Test()); // osäker på denna
     emit(new Beq(lfalse));
     emit(new Comment("when (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     pushBlock();
@@ -309,7 +310,7 @@ public class Compiler implements
     compile(p.stm_2);
     popBlock();
     emit(new Target(end));
-    output.add("\n NOP");
+    output.add("\n NOP"); // kanske inte behövs
     return null;
   }
 
@@ -339,6 +340,7 @@ public class Compiler implements
     //Check condition
     compile(p.exp_, null);
     // Compare and jump to "done" if equal
+    emit(new Test());
     emit(new Beq(done));
     // newblock with more work
     emit(new Comment("while (" + PrettyPrinter.print(p.exp_) + ") do:\n"));
@@ -356,10 +358,21 @@ public class Compiler implements
   }
 
   /* ==================== Expressions ==================== */
+  //TODO: Work on visitor
+  interface AtomVisitor<R> {
+    public R visit(EAdd e);
+    public R visit(ESub e);
+    public R visit(EGt e);
+    public R visit(ELt e);
+  }
+  // Like this: class EIntVisitor extends AtomVisitor<Void> {}
+  // same for this one class EIdVisitor extends AtomVisitor<Void> {}
   /* Literals */
   public Void visit(EInt p, Exp arg) {
     if(arg instanceof EAdd)
       emit(new Add(AddrMethod.IMMEDIATE, p.integer_));
+    else if(arg instanceof EGt)
+      emit(new Cmp(AddrMethod.IMMEDIATE, p.integer_));
     else
       emit(new Load(AddrMethod.IMMEDIATE, p.integer_));  
     return null;
@@ -417,46 +430,55 @@ public class Compiler implements
     throw new RuntimeException("Divide not yet supported"); 
   }
 
-  /* Logic operations */
+  /* Logic operations 
+   * leaves 1 or 0 on register A when compiled
+   * TODO: Still needs testing
+   * */
   public Void visit(EOr p, Exp arg) {
     Label ltrue = newLabel();
-    /*emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Push(INT, 1));
+    emit(new Comment(PrettyPrinter.print(p)));
+    emit(new Load(AddrMethod.IMMEDIATE, 1));
     // Lazy eval
-    compile(p.exp_1);
-    emit(new IfNEq(ltrue));
+    compile(p.exp_1, null);
+    emit(new Test());
+    emit(new Bne(ltrue));
     // Eval next exp
-    compile(p.exp_2);
-    emit(new IfNEq(ltrue));
-    emit(new Pop(INT));
+    compile(p.exp_2, null);
+    emit(new Test());
+    emit(new Bne(ltrue));
     //FALSE
-    emit(new Push(INT, 0));
-    emit(new Target(ltrue));*/
+    emit(new Load(AddrMethod.IMMEDIATE, 0));
+    emit(new Target(ltrue));
 		return null;
   }
   public Void visit(EAnd p, Exp arg) {
     Label lfalse = newLabel();
-    /*emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Push(INT, 0));
+    emit(new Comment(PrettyPrinter.print(p)));
+    emit(new Load(AddrMethod.IMMEDIATE, 0));
     // Lazy eval
-    compile(p.exp_1);
-    emit(new IfEq(lfalse));
+    compile(p.exp_1, null);
+    emit(new Test());
+    emit(new Beq(lfalse));
     // Eval next exp
-    compile(p.exp_2);
-    emit(new IfEq(lfalse));
-    emit(new Pop(INT));
+    compile(p.exp_2, null);
+    emit(new Test());
+    emit(new Beq(lfalse));
     //FALSE
-    emit(new Push(INT, 1));
-    emit(new Target(lfalse));*/
+    emit(new Load(AddrMethod.IMMEDIATE, 1));
+    emit(new Target(lfalse));
 		return null;
   }
 
-   public Void visit(ELt p, Exp arg) {
-    	return null;
+  public Void visit(ELt p, Exp arg) {
+    compile(p.exp_1, null);
+    compile(p.exp_2, p);
+    return null;
   }
 
   public Void visit(EGt p, Exp arg) {
-       	return null;
+    compile(p.exp_1, null);
+    compile(p.exp_2, p);
+    return null;
   }
   public Void visit(ENeq p, Exp arg) {
       	return null;
@@ -472,16 +494,48 @@ public class Compiler implements
       	return null;
   }
   public Void visit(EDecr p, Exp arg) {
-	    return null;
+    CtxEntry x = lookupVar(p.id_);
+    if(x.global) {
+      emit(new Dec(AddrMethod.ABSOLUTE, p.id_));
+      emit(new Load(AddrMethod.ABSOLUTE, p.id_));
+    } else {
+      emit(new Dec(AddrMethod.NS, x.addr));
+      emit(new Load(AddrMethod.NS, x.addr));
+    }
+	  return null;
   }
   public Void visit(EIncr p, Exp arg) {
-  	throw new RuntimeException("Not yet implemented");
+  	CtxEntry x = lookupVar(p.id_);
+    if(x.global) {
+      emit(new Inc(AddrMethod.ABSOLUTE, p.id_));
+      emit(new Load(AddrMethod.ABSOLUTE, p.id_));
+    } else {
+      emit(new Inc(AddrMethod.NS, x.addr));
+      emit(new Load(AddrMethod.NS, x.addr));
+    }
+	  return null;
   }
   public Void visit(EPDecr p, Exp arg) {
-		throw new RuntimeException("Not yet implemented");
+		CtxEntry x = lookupVar(p.id_);
+    if(x.global) {
+      emit(new Load(AddrMethod.ABSOLUTE, p.id_));
+      emit(new Dec(AddrMethod.ABSOLUTE, p.id_));
+    } else {
+      emit(new Load(AddrMethod.NS, x.addr));
+      emit(new Dec(AddrMethod.NS, x.addr));
+    }
+	  return null;
   }
   public Void visit(EPIncr p, Exp arg) {
-		throw new RuntimeException("Not yet implemented");
+		CtxEntry x = lookupVar(p.id_);
+    if(x.global) {
+      emit(new Load(AddrMethod.ABSOLUTE, p.id_));
+      emit(new Inc(AddrMethod.ABSOLUTE, p.id_));
+    } else {
+      emit(new Load(AddrMethod.NS, x.addr));
+      emit(new Inc(AddrMethod.NS, x.addr));
+    }
+	  return null;
   }
 
   public Void visit(ECall p, Exp arg) {
