@@ -17,12 +17,12 @@ public class Main {
       System.exit(1);
     }
 
-    String srcFile   = args[0];                // Ex: path/to/file.cc
-    String fileCore  = stripSuffix(srcFile);   // Ex: path/to/file
-    String dir       = stripFileName(srcFile); // Ex: path/to  or "."
-    String className = stripPath(fileCore);    // Ex:         file
-    String out       = fileCore + ".flisp";    // Ex: path/to/file.flisp
-    String assembler = "qaflisp";              // will look for assembler in $PATH 
+    final String srcFile   = args[0];                // Ex: path/to/file.cc
+    final String fileCore  = stripSuffix(srcFile);   // Ex: path/to/file
+    final String dir       = stripFileName(srcFile); // Ex: path/to  or "."
+    final String className = stripPath(fileCore);    // Ex:         file
+    final String out       = fileCore + ".flisp";    // Ex: path/to/file.flisp
+    final String assembler = "qaflisp";              // will look for assembler in $PATH 
 
     Yylex  l = null;
     try {
@@ -48,7 +48,13 @@ public class Main {
 
       // Call the assembler
       Runtime rt = Runtime.getRuntime();
-      Process ps = rt.exec(String.format("%s %s", assembler, out));
+      Process ps = null;
+      try {
+        ps = rt.exec(String.format("%s %s", assembler, out));
+      } catch(IOException e) {
+        System.err.println("Error: Could not find qaflisp (assembler) in PATH. Exiting..");
+        System.exit(1);
+      }
       
       // Print messages from assembler process
       InputStream in = ps.getInputStream();
@@ -65,7 +71,7 @@ public class Main {
     }
     catch (RuntimeException e) {
       System.err.println(String.format("Compiler error: %s", e.getMessage()));
-      System.exit(-1);
+      System.exit(1);
     }
     catch (IOException e) {
       System.err.println(e.toString());
