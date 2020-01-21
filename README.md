@@ -32,20 +32,17 @@ which is a small fragment of C++ used in the course I mentioned above:
 | 1     | e\|\|e               | left  | disjunction \(3\)       |
 | 0     | x=e                  | right | assignment \(3\)        |
 
-# Installation
-....TO BE ADDED
-  Linux
-    Add QAflisp to PATH..
 
-  Windows
-    Add QAflisp to PATH
-
-Make it yourself from source:
-....TO BE ADDED
-
-The Assembler QAflisp can be downloaded from [here](http://www.gbgmv.se/html/digiflisp.html) (it is included with digiflisp). 
+# Datatypes
+  TODO
 
 # Limitations
-- String type and String literals are not yet supported
-- Double type will not be supported
 
+# Installation
+Note: I have only tested installing the compiler on linux, but for windows it should be similar.  
+-Linux
+  1. Download binary from git or make from source. (Making requires the dependencies that BNFC requires).
+  2. Add QAflisp to PATH:  ```export PATH=$PATH:/usr/share/digiflisp/```
+  3. Now it should work.
+
+The Assembler QAflisp can be downloaded from [here](http://www.gbgmv.se/html/digiflisp.html) (it is included with digiflisp). 
