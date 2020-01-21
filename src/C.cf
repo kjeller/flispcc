@@ -19,6 +19,8 @@ terminator Def "" ;
 
 comment "//";
 comment "/*" "*/";
+
+-- not used
 comment "#";
 
 -- Function: <type> <identifier>(<params>) {<statements>} 
@@ -65,7 +67,10 @@ separator nonempty Id ",";
 --| 0     | x=e                  | right | assignment \(3\)        |
 
 EInt. 		Exp6 ::= Integer;
---EDouble. 	Exp6 ::= Double;
+
+--TODO
+--EString.  Exp6 ::= String;
+--EChar.    Exp6 ::= Char;
 ETrue. 		Exp6 ::= "true";
 EFalse. 	Exp6 ::= "false";
 EId. 			Exp6 ::= Id;
@@ -99,6 +104,8 @@ separator Exp ",";
 TBool.    Type ::= "bool";
 TInt.     Type ::= "int";
 TString.  Type ::= "string";
+TChar.    Type ::= "char";
+TUChar.   Type ::= "unsigned" "char";
 TVoid.    Type ::= "void";
 
 -- Id token.

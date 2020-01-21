@@ -61,7 +61,7 @@ public class Compiler implements
 
     sig = new TreeMap();
 
-    // Built-in functions
+    // Built-in functions - currently not used
     ListArg intArg = new ListArg();
     intArg.add(new ADecl(INT, "x"));
 
@@ -112,13 +112,8 @@ public class Compiler implements
     s.accept(this, null);
   }
 
-  public void compile(Exp e) {
-    e.accept(this, null);
-  }
-
-  public void compile(Exp e1, Exp e2) {
-    compile(e1);
-    compile(e2);
+  public void compile(Exp e, Exp a) {
+    e.accept(this, a);
   }
 
   public void emit(Code c) {
@@ -232,13 +227,12 @@ public class Compiler implements
     
     // Program starts here
     emit(new Org(20));
-    emit(new Leasp(-getVarCount()));
+    emit(new Leasp(-getVarCount())); //Add
     
     for(String s : newOutput)
       output.add(s);
     
     emit(new Leasp(getVarCount()));
-    // Maybe add RTS here 
     return null;
   }
 
@@ -284,7 +278,7 @@ public class Compiler implements
 
   public Void visit(SInit p, Void arg) {
     emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_); 
+    compile(p.exp_, null); 
     addVar(p.id_, p.type_);
     CtxEntry entry = lookupVar(p.id_);
     emit(new Store(AddrMethod.NS, entry.addr));
@@ -293,7 +287,7 @@ public class Compiler implements
 
   public Void visit(SExp p, Void arg) {
     emit(new Comment(PrettyPrinter.print(p.exp_)));
-    compile(p.exp_);
+    compile(p.exp_, null);
     return null;
   }
 
@@ -302,20 +296,20 @@ public class Compiler implements
     Label end = newLabel();
 
     emit(new Comment("test if-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
-    /*compile(p.exp_);
-    emit(new IfEq(lfalse));
+    compile(p.exp_, null);
+    emit(new Beq(lfalse));
     emit(new Comment("when (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     pushBlock();
     compile(p.stm_1);
     popBlock();
-    emit(new Goto(end));
+    emit(new Bra(end));
     emit(new Comment("unless (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     emit(new Target(lfalse));
     pushBlock();
     compile(p.stm_2);
     popBlock();
     emit(new Target(end));
-    output.add("\n nop");*/
+    output.add("\n NOP");
     return null;
   }
 
@@ -339,23 +333,21 @@ public class Compiler implements
     Label start = newLabel();
     Label done  = newLabel();
 
-    /*emit(new Comment("test while-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
+    emit(new Comment("test while-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
      // Start label (eg. L0)
     emit(new Target(start));
     //Check condition
-    compile(p.exp_);
+    compile(p.exp_, null);
     // Compare and jump to "done" if equal
-    emit(new IfEq(done));
+    emit(new Beq(done));
     // newblock with more work
     emit(new Comment("while (" + PrettyPrinter.print(p.exp_) + ") do:\n"));
     pushBlock();
     compile(p.stm_);
     popBlock();
     // Loop more
-    emit(new Goto(start));
-
-    // You done now
-    emit(new Target(done));*/
+    emit(new Bra(start));
+    emit(new Target(done));
     return null;
   }
 
@@ -387,16 +379,29 @@ public class Compiler implements
   public Void visit(EId p, Exp arg) {
     //emit(new Comment(PrettyPrinter.print(p)));
 		CtxEntry entry = lookupVar(p.id_);
+
+    // Default case
+    Code c = new Load(AddrMethod.NS, entry.addr);
     if(arg instanceof EAdd)
-      emit(new Add(AddrMethod.NS, entry.addr));
-    else
-    emit(new Load(AddrMethod.NS, entry.addr));
+      c = new Add(AddrMethod.NS, entry.addr);
+    
+    // Global case
+    if(entry.global) {
+      c = new Load(AddrMethod.ABSOLUTE, p.id_);
+      if(arg instanceof EAdd)
+        c = new Add(AddrMethod.ABSOLUTE, p.id_);
+    }
+    emit(c);
     return null;
   }
 
   /* Arithmetic operations */
   public Void visit(EAdd p, Exp arg) {
-    compile(p.exp_1, p.exp_2);
+    if(!(arg instanceof EAdd))
+      compile(p.exp_1, null);
+    else
+      compile(p.exp_1, p);
+    compile(p.exp_2, p);
 		return null;
   }
   public Void visit(ESub p, Exp arg) {
@@ -413,7 +418,6 @@ public class Compiler implements
   }
 
   /* Logic operations */
-
   public Void visit(EOr p, Exp arg) {
     Label ltrue = newLabel();
     /*emit(new Comment(PrettyPrinter.print(p)));
@@ -487,8 +491,11 @@ public class Compiler implements
   /* Assign */
   public Void visit(EAss p, Exp arg) {
     CtxEntry entry = lookupVar(p.id_);
-    compile(p.exp_);
-    emit(new Store(AddrMethod.NS, entry.addr));
+    compile(p.exp_, arg);
+    if(entry.global)
+      emit(new Store(AddrMethod.ABSOLUTE, p.id_));
+    else
+      emit(new Store(AddrMethod.NS, entry.addr));
     return null;
   }
 }

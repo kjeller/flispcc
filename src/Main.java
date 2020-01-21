@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.lang.Runtime;
 
 import C.*;
 import C.Absyn.*;
@@ -21,6 +22,7 @@ public class Main {
     String dir       = stripFileName(srcFile); // Ex: path/to  or "."
     String className = stripPath(fileCore);    // Ex:         file
     String out       = fileCore + ".flisp";    // Ex: path/to/file.flisp
+    String assembler = "qaflisp";              // will look for assembler in $PATH 
 
     Yylex  l = null;
     try {
@@ -42,7 +44,18 @@ public class Main {
       writer.close();
 
       // Don't know if neccessary
-      //System.out.println(String.format("Compilation successful. Output file: %s", out));
+      System.out.println(String.format("Compilation successful. Output file: %s", out));
+
+      // Call the assembler
+      Runtime rt = Runtime.getRuntime();
+      Process ps = rt.exec(String.format("%s %s", assembler, out));
+      
+      // Print messages from assembler process
+      InputStream in = ps.getInputStream();
+      int x = -1;
+      while((x = in.read()) != -1) {
+        System.out.print((char) x);
+      } 
     }
 
     catch (TypeException e) {
