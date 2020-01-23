@@ -57,7 +57,7 @@ public class Compiler implements
     output.add(";; Command: flispcc ...         \n");
     output.add(String.format(";; Compiled: %s   \n", new Date()));
     output.add(";; Author: Karl Strålman        \n");
-    output.add(";;----------------------------------------+\n"); 
+    output.add(";;----------------------------------------+\n");
 
     sig = new TreeMap();
 
@@ -121,7 +121,7 @@ public class Compiler implements
     if(c instanceof Target || c instanceof VarTarget)
       formatting = "";
 
-    output.add(String.format("%s%s", 
+    output.add(String.format("%s%s",
           formatting, c.accept(new CodeToAssembler(stack))));
   }
   public void pushBlock() {
@@ -155,7 +155,7 @@ public class Compiler implements
   public void addVar(String id, Type t) {
     ctx.peek().put(id, new CtxEntry(t, nextLocal, false));
     nextLocal++;
-    limitLocals++; 
+    limitLocals++;
   }
 
   public void addGlobal(String id, Type t) {
@@ -213,7 +213,7 @@ public class Compiler implements
     // Add to output
     Func f = new Func(p.id_,  new FunType(p.type_, p.listarg_));
     // TODO: do something with functions
-    
+
 
     // Global varibles declared here
     if(getGlobVarCount() > 0) {
@@ -224,14 +224,14 @@ public class Compiler implements
       }
       output.add("\n");
     }
-    
+
     // Program starts here
     emit(new Org(20));
     emit(new Leasp(-getVarCount())); //Add
-    
+
     for(String s : newOutput)
       output.add(s);
-    
+
     emit(new Leasp(getVarCount()));
     return null;
   }
@@ -246,7 +246,7 @@ public class Compiler implements
       return null;
     }
 
-   /* Does not work since I do not know when to run exp. 
+   /* Does not work since I do not know when to run exp.
     * Exp cannot run outside ORG 20 where the program starts..
     * if(p.stm_ instanceof SInit) {
       SInit s = (SInit)p.stm_;
@@ -278,7 +278,7 @@ public class Compiler implements
 
   public Void visit(SInit p, Void arg) {
     emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_, null); 
+    compile(p.exp_, null);
     addVar(p.id_, p.type_);
     CtxEntry entry = lookupVar(p.id_);
     emit(new Store(AddrMethod.NS, entry.addr));
@@ -354,30 +354,17 @@ public class Compiler implements
   }
 
   public Void visit(SReturn p, Void arg) {
-    throw new RuntimeException("Not yet implemented"); 
+    throw new RuntimeException("Not yet implemented");
   }
 
   /* ==================== Expressions ==================== */
-  //TODO: Work on visitor
-  interface AtomVisitor<R> {
-    public R visit(EAdd e);
-    public R visit(ESub e);
-    public R visit(EGt e);
-    public R visit(ELt e);
-  }
-  // Like this: class EIntVisitor extends AtomVisitor<Void> {}
-  // same for this one class EIdVisitor extends AtomVisitor<Void> {}
+
   /* Literals */
   public Void visit(EInt p, Exp arg) {
-    if(arg instanceof EAdd)
-      emit(new Add(AddrMethod.IMMEDIATE, p.integer_));
-    else if(arg instanceof EGt)
-      emit(new Cmp(AddrMethod.IMMEDIATE, p.integer_));
-    else
-      emit(new Load(AddrMethod.IMMEDIATE, p.integer_));  
+    emit(arg.accept(new EIntVisitor(), p));
     return null;
   }
- 
+
   public Void visit(ETrue p, Exp arg) {
     emit(new Load(AddrMethod.IMMEDIATE, 1));
 		return null;
@@ -390,28 +377,14 @@ public class Compiler implements
 
   /* Variable */
   public Void visit(EId p, Exp arg) {
-    //emit(new Comment(PrettyPrinter.print(p)));
-		CtxEntry entry = lookupVar(p.id_);
-
-    // Default case
-    Code c = new Load(AddrMethod.NS, entry.addr);
-    if(arg instanceof EAdd)
-      c = new Add(AddrMethod.NS, entry.addr);
-    
-    // Global case
-    if(entry.global) {
-      c = new Load(AddrMethod.ABSOLUTE, p.id_);
-      if(arg instanceof EAdd)
-        c = new Add(AddrMethod.ABSOLUTE, p.id_);
-    }
-    emit(c);
+    emit(arg.accept(new EIdVisitor(), p));
     return null;
   }
 
   /* Arithmetic operations */
   public Void visit(EAdd p, Exp arg) {
     if(!(arg instanceof EAdd))
-      compile(p.exp_1, null);
+      compile(p.exp_1, arg);
     else
       compile(p.exp_1, p);
     compile(p.exp_2, p);
@@ -424,13 +397,13 @@ public class Compiler implements
 		return null;
   }
   public Void visit(EMul p, Exp arg) {
-    throw new RuntimeException("Multiplication not yet supported."); 
+    throw new RuntimeException("Multiplication not yet supported.");
   }
   public Void visit(EDiv p, Exp arg) {
-    throw new RuntimeException("Divide not yet supported"); 
+    throw new RuntimeException("Divide not yet supported");
   }
 
-  /* Logic operations 
+  /* Logic operations
    * leaves 1 or 0 on register A when compiled
    * TODO: Still needs testing
    * */
@@ -439,11 +412,11 @@ public class Compiler implements
     emit(new Comment(PrettyPrinter.print(p)));
     emit(new Load(AddrMethod.IMMEDIATE, 1));
     // Lazy eval
-    compile(p.exp_1, null);
+    compile(p.exp_1, p);
     emit(new Test());
     emit(new Bne(ltrue));
     // Eval next exp
-    compile(p.exp_2, null);
+    compile(p.exp_2, p);
     emit(new Test());
     emit(new Bne(ltrue));
     //FALSE
@@ -456,11 +429,11 @@ public class Compiler implements
     emit(new Comment(PrettyPrinter.print(p)));
     emit(new Load(AddrMethod.IMMEDIATE, 0));
     // Lazy eval
-    compile(p.exp_1, null);
+    compile(p.exp_1, p);
     emit(new Test());
     emit(new Beq(lfalse));
     // Eval next exp
-    compile(p.exp_2, null);
+    compile(p.exp_2, p);
     emit(new Test());
     emit(new Beq(lfalse));
     //FALSE
@@ -470,13 +443,13 @@ public class Compiler implements
   }
 
   public Void visit(ELt p, Exp arg) {
-    compile(p.exp_1, null);
+    compile(p.exp_1, p);
     compile(p.exp_2, p);
     return null;
   }
 
   public Void visit(EGt p, Exp arg) {
-    compile(p.exp_1, null);
+    compile(p.exp_1, p);
     compile(p.exp_2, p);
     return null;
   }
@@ -551,5 +524,100 @@ public class Compiler implements
     else
       emit(new Store(AddrMethod.NS, entry.addr));
     return null;
+  }
+
+  class EIntVisitor implements Exp.Visitor<Code, EInt> {
+    public Code visit(EInt p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ETrue p, EInt arg)  { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EFalse p, EInt arg) { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EId p, EInt arg)    { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ECall p, EInt arg)  { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EPIncr p, EInt arg) { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EPDecr p, EInt arg) { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EIncr p, EInt arg)  { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EDecr p, EInt arg)  { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EMul p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EDiv p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EAdd p, EInt arg)   { return new Add(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ESub p, EInt arg)   { return new Sub(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ELt p, EInt arg)    { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EGt p, EInt arg)    { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ELEq p, EInt arg)   { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EGeq p, EInt arg)   { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EEq p, EInt arg)    { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(ENeq p, EInt arg)   { return new Cmp(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EAnd p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EOr p, EInt arg)    { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+    public Code visit(EAss p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
+  }
+
+  /*
+  //emit(new Comment(PrettyPrinter.print(p)));
+  CtxEntry entry = lookupVar(p.id_);
+
+  // Default case
+  Code c = new Load(AddrMethod.NS, entry.addr);
+  if(arg instanceof EAdd)
+    c = new Add(AddrMethod.NS, entry.addr);
+
+  // Global case
+  if(entry.global) {
+    c = new Load(AddrMethod.ABSOLUTE, p.id_);
+    if(arg instanceof EAdd)
+      c = new Add(AddrMethod.ABSOLUTE, p.id_);
+  }
+  emit(c);
+  */
+
+  // Todo: Clean up this mess
+  class EIdVisitor implements Exp.Visitor<Code, EId> {
+    public Code load(Exp p, EId arg) {
+      CtxEntry entry = lookupVar(arg.id_);
+      if(entry.global)
+        return new Load(AddrMethod.ABSOLUTE, arg.id_);
+      return new Load(AddrMethod.NS, entry.addr);
+    }
+
+    public Code cmp(Exp p, EId arg) {
+      CtxEntry entry = lookupVar(arg.id_);
+      if(entry.global)
+        return new Cmp(AddrMethod.ABSOLUTE, arg.id_);
+      return new Cmp(AddrMethod.NS, entry.addr);
+    }
+
+    /* Atoms cannot be in other atom. */
+    public Code visit(EInt p, EId arg)    { return load(p, arg); }
+    public Code visit(ETrue p, EId arg)   { return load(p, arg); }
+    public Code visit(EFalse p, EId arg)  { return load(p, arg); }
+    public Code visit(EId p, EId arg)    { return load(p, arg); }
+
+    public Code visit(ECall p, EId arg)  { throw new RuntimeException("Not implemented"); }
+    public Code visit(EPIncr p, EId arg) { return load(p, arg); }
+    public Code visit(EPDecr p, EId arg) { return load(p, arg); }
+    public Code visit(EIncr p, EId arg)  { return load(p, arg); }
+    public Code visit(EDecr p, EId arg)  { return load(p, arg); }
+    public Code visit(EMul p, EId arg)   { return load(p, arg); }
+    public Code visit(EDiv p, EId arg)   { return load(p, arg); }
+    public Code visit(EAdd p, EId arg)   {
+      CtxEntry entry = lookupVar(arg.id_);
+      if(entry.global)
+        return new Add(AddrMethod.ABSOLUTE, arg.id_);
+      return new Add(AddrMethod.NS, entry.addr);
+    }
+    public Code visit(ESub p, EId arg) {
+      CtxEntry entry = lookupVar(arg.id_);
+        if(entry.global)
+          return new Sub(AddrMethod.ABSOLUTE, arg.id_);
+        return new Sub(AddrMethod.NS, entry.addr);
+    }
+    public Code visit(ELt p, EId arg)   { return cmp(p, arg); }
+    public Code visit(EGt p, EId arg)   { return cmp(p, arg); }
+    public Code visit(ELEq p, EId arg)  { return cmp(p, arg); }
+    public Code visit(EGeq p, EId arg)  { return cmp(p, arg); }
+    public Code visit(EEq p, EId arg)   { return cmp(p, arg); }
+    public Code visit(ENeq p, EId arg)  { return cmp(p, arg); }
+    public Code visit(EAnd p, EId arg)  { return load(p, arg); }
+    public Code visit(EOr p, EId arg)   { return load(p, arg); }
+    public Code visit(EAss p, EId arg)  { return load(p, arg); }
   }
 }

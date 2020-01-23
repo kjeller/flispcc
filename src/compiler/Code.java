@@ -131,6 +131,19 @@ class Add extends Addressable {
   }
 }
 
+class Sub extends Addressable {
+  public Sub(AddrMethod m, int x) {
+   super(m, x);
+  }
+
+  public Sub(AddrMethod m, String s) {
+    super(m, s);
+  }
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
+
 class Inc extends Addressable {
   public Inc(AddrMethod m, int x) {
     super(m, x);
@@ -358,6 +371,7 @@ interface CodeVisitor<R> {
   public R visit(Pull c);
   public R visit(Push c);
   public R visit(Add c);
+  public R visit(Sub c);
   public R visit(Target c);
   public R visit(VarTarget c);
   public R visit(Return c);
@@ -414,6 +428,10 @@ class CodeToAssembler implements CodeVisitor<String> {
   /* ===== Integer arithmetic ===== */
   public String visit(Add c) {
     return c.toString("ADDA", null);
+  }
+
+  public String visit(Sub c) {
+    return c.toString("SUBA", null);
   }
 
   /* ===== Stack operations ====== */
