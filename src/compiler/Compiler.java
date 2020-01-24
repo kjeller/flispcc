@@ -278,7 +278,7 @@ public class Compiler implements
 
   public Void visit(SInit p, Void arg) {
     emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_, null);
+    compile(p.exp_, p.exp_);
     addVar(p.id_, p.type_);
     CtxEntry entry = lookupVar(p.id_);
     emit(new Store(AddrMethod.NS, entry.addr));
@@ -287,7 +287,7 @@ public class Compiler implements
 
   public Void visit(SExp p, Void arg) {
     emit(new Comment(PrettyPrinter.print(p.exp_)));
-    compile(p.exp_, null);
+    compile(p.exp_, p.exp_);
     return null;
   }
 
@@ -296,8 +296,7 @@ public class Compiler implements
     Label end = newLabel();
 
     emit(new Comment("test if-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
-    compile(p.exp_, null);
-    emit(new Test()); // osäker på denna
+    compile(p.exp_, p.exp_);
     emit(new Beq(lfalse));
     emit(new Comment("when (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     pushBlock();
@@ -338,9 +337,8 @@ public class Compiler implements
      // Start label (eg. L0)
     emit(new Target(start));
     //Check condition
-    compile(p.exp_, null);
+    compile(p.exp_, p.exp_);
     // Compare and jump to "done" if equal
-    emit(new Test());
     emit(new Beq(done));
     // newblock with more work
     emit(new Comment("while (" + PrettyPrinter.print(p.exp_) + ") do:\n"));
@@ -386,7 +384,7 @@ public class Compiler implements
     if(!(arg instanceof EAdd))
       compile(p.exp_1, arg);
     else
-      compile(p.exp_1, p);
+      compile(p.exp_1, p.exp_1);
     compile(p.exp_2, p);
 		return null;
   }
@@ -443,13 +441,13 @@ public class Compiler implements
   }
 
   public Void visit(ELt p, Exp arg) {
-    compile(p.exp_1, p);
+    compile(p.exp_1, arg);
     compile(p.exp_2, p);
     return null;
   }
 
   public Void visit(EGt p, Exp arg) {
-    compile(p.exp_1, p);
+    compile(p.exp_1, p.exp_1);
     compile(p.exp_2, p);
     return null;
   }

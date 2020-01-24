@@ -71,6 +71,7 @@ public class Main {
     }
     catch (RuntimeException e) {
       System.err.println(String.format("Compiler error: %s", e.getMessage()));
+      System.err.println(e.toString());
       System.exit(1);
     }
     catch (IOException e) {

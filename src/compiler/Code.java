@@ -414,7 +414,7 @@ class CodeToAssembler implements CodeVisitor<String> {
   
   /* ===== Comment ===== */
   public String visit(Comment c) {
-    return String.format(";; %s", c.comment);
+    return String.format(";; %s\n", c.comment);
   }
 
   public String visit(Store c) {
