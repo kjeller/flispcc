@@ -178,6 +178,28 @@ public class Compiler implements
     return global.size();
   }
 
+  // Ugly solution
+  // TODO: Fix this ugly mess
+  public Code branchType(Exp e, Label done) {
+    Code c = null;
+    if(e instanceof EGt) {
+      c = new Bgt(done);
+    } else if(e instanceof ELt) {
+      c = new Blt(done);
+    } else if(e instanceof ENeq) {
+      c = new Bne(done);
+    } else if(e instanceof EEq) { 
+      c = new Beq(done); 
+    } else if(e instanceof ETrue || e instanceof EFalse) {
+      emit(new Test());
+      c = new Beq(done);
+    } else {
+      // Error
+      c = new Bra(done);
+    }
+    return c;
+  }
+
   /*================ Program ===================*/
   public Void visit(Prg p, Void arg) {
     for(Def d : p.listdef_)
@@ -227,12 +249,17 @@ public class Compiler implements
 
     // Program starts here
     emit(new Org(20));
-    emit(new Leasp(-getVarCount())); //Add
+
+    // Count local varible size to determine how much space on stack
+    int varsize = getVarCount();
+    if(varsize > 0)
+      emit(new Leasp(varsize)); //Add
 
     for(String s : newOutput)
       output.add(s);
 
-    emit(new Leasp(getVarCount()));
+    if(varsize > 0)
+      emit(new Leasp(varsize));
     return null;
   }
 
@@ -297,19 +324,51 @@ public class Compiler implements
 
     emit(new Comment("test if-condition (" + PrettyPrinter.print(p.exp_) + ")\n"));
     compile(p.exp_, p.exp_);
-    emit(new Beq(lfalse));
+    //TODO: Implement the different branches here 
+    emit(branchType(p.exp_, lfalse));
     emit(new Comment("when (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     pushBlock();
+     // Save output from extermination
+    LinkedList<String> savedOutput = output;
+    output = new LinkedList();
+
     compile(p.stm_1);
+
+     // Must do this for scoping
+    LinkedList<String> newOutput = output;
+    output = savedOutput;
+ 
+    // Local variables in scope
+    //TODO: fungerar inte som det ska 
+    //emit(new Leasp(-getVarCount())); 
+    for(String s : newOutput)
+      output.add(s);
+   // emit(new Leasp(getVarCount()));
+
     popBlock();
     emit(new Bra(end));
     emit(new Comment("unless (" + PrettyPrinter.print(p.exp_) + ") do: \n"));
     emit(new Target(lfalse));
     pushBlock();
+    
+    savedOutput = output;
+    output = new LinkedList();
+
     compile(p.stm_2);
+
+    // Must do this for scoping
+    newOutput = output;
+    output = savedOutput;
+
+    // Local variables in scope
+    //emit(new Leasp(-getVarCount())); 
+    for(String s : newOutput)
+      output.add(s);
+    //emit(new Leasp(getVarCount()));
+
     popBlock();
     emit(new Target(end));
-    output.add("\n NOP"); // kanske inte behövs
+    output.add("\t\tNOP\n"); // kanske inte behövs
     return null;
   }
 
@@ -339,7 +398,7 @@ public class Compiler implements
     //Check condition
     compile(p.exp_, p.exp_);
     // Compare and jump to "done" if equal
-    emit(new Beq(done));
+    emit(branchType(p.exp_, done));
     // newblock with more work
     emit(new Comment("while (" + PrettyPrinter.print(p.exp_) + ") do:\n"));
     pushBlock();
@@ -441,7 +500,7 @@ public class Compiler implements
   }
 
   public Void visit(ELt p, Exp arg) {
-    compile(p.exp_1, arg);
+    compile(p.exp_1, p.exp_1);
     compile(p.exp_2, p);
     return null;
   }
@@ -452,17 +511,24 @@ public class Compiler implements
     return null;
   }
   public Void visit(ENeq p, Exp arg) {
-      	return null;
+    compile(p.exp_1, p.exp_1);
+    compile(p.exp_2, p);
+    return null;
   }
-
   public Void visit(EEq p, Exp arg) {
-       	return null;
+    compile(p.exp_1, p.exp_1);
+    compile(p.exp_2, p);
+    return null;
   }
   public Void visit(EGeq p, Exp arg) {
-      	return null;
+    compile(p.exp_1, p.exp_1);
+    compile(p.exp_2, p);
+    return null;
   }
   public Void visit(ELEq p, Exp arg) {
-      	return null;
+    compile(p.exp_1, p.exp_1);
+    compile(p.exp_2, p);
+    return null;
   }
   public Void visit(EDecr p, Exp arg) {
     CtxEntry x = lookupVar(p.id_);
@@ -548,24 +614,6 @@ public class Compiler implements
     public Code visit(EOr p, EInt arg)    { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
     public Code visit(EAss p, EInt arg)   { return new Load(AddrMethod.IMMEDIATE, arg.integer_); }
   }
-
-  /*
-  //emit(new Comment(PrettyPrinter.print(p)));
-  CtxEntry entry = lookupVar(p.id_);
-
-  // Default case
-  Code c = new Load(AddrMethod.NS, entry.addr);
-  if(arg instanceof EAdd)
-    c = new Add(AddrMethod.NS, entry.addr);
-
-  // Global case
-  if(entry.global) {
-    c = new Load(AddrMethod.ABSOLUTE, p.id_);
-    if(arg instanceof EAdd)
-      c = new Add(AddrMethod.ABSOLUTE, p.id_);
-  }
-  emit(c);
-  */
 
   // Todo: Clean up this mess
   class EIdVisitor implements Exp.Visitor<Code, EId> {

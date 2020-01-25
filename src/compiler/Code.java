@@ -104,15 +104,15 @@ class Addressable extends Code {
       case INHERENT: 
         return String.format("%s%s", ins, postfix);
       case IMMEDIATE:
-        return String.format("%s\t\t#%d \n", ins,  data);
+        return String.format("%s\t#%d \n", ins,  data);
       case ABSOLUTE:
         // Address can both be label and addr
         if(label.isEmpty())
-          return String.format("%s\t\t%d \n", ins, address);
+          return String.format("%s\t%d \n", ins, address);
         else
-          return String.format("%s\t\t%s \n", ins, label);
+          return String.format("%s\t%s \n", ins, label);
       case NS:
-        return String.format("%s\t\t%d,SP\n", ins, index);
+        return String.format("%s\t%d,SP\n", ins, index);
     }
     return null;
   }
