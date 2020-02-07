@@ -8,7 +8,7 @@ The FLISP processor is very similar to the Motorola 68HC11 microcontroller since
 CPUs with similar instructions and architechture. This led me to believe that it was easier to translate an [exisiting compiler](https://www.gnu.org/software/m68hc11/m68hc11_gcc.html) for the 68HC11
 into FLISP instructions. After some research I realized that it was harder than what I first thought. I would have to invest 
 many hours learning how GCC works.
-In the course DAT151 "Programming Language Technology" I recently took, we learned about context-free grammars, and this is  where I learned BNF.
+In the course DAT151 "Programming Language Technology" I recently took, we learned about context-free grammars and some tools that produces compiler front-ends, and this is  where I learned about BNFC.
 The laborations for the course recommended BNFC to handle the parsing of files. So instead of translating GCC code I choose to write a compiler myself.
 
 # The C language
