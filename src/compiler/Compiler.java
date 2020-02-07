@@ -95,26 +95,11 @@ public class Compiler implements
   }
 
   /*====(AUX) Compilation and helper functions ====*/
-
-  public void compile(Program p) {
-    p.accept(this, null);
-  }
-
-  public void compile(Def d) {
-    d.accept(this, null);
-  }
-
-  public void compile(Arg a) {
-    a.accept(this, null);
-  }
-
-  public void compile(Stm s) {
-    s.accept(this, null);
-  }
-
-  public void compile(Exp e, Exp a) {
-    e.accept(this, a);
-  }
+  public void compile(Program p) { p.accept(this, null); }
+  public void compile(Def d) { d.accept(this, null); }
+  public void compile(Arg a) { a.accept(this, null); }
+  public void compile(Stm s) { s.accept(this, null); }
+  public void compile(Exp e, Exp a) { e.accept(this, a); }
 
   public void emit(Code c) {
     String formatting = "\t\t";
@@ -204,7 +189,6 @@ public class Compiler implements
   public Void visit(Prg p, Void arg) {
     for(Def d : p.listdef_)
       compile(d);
-
     return null;
   }
 
@@ -235,7 +219,6 @@ public class Compiler implements
     // Add to output
     Func f = new Func(p.id_,  new FunType(p.type_, p.listarg_));
     // TODO: do something with functions
-
 
     // Global varibles declared here
     if(getGlobVarCount() > 0) {
@@ -448,9 +431,11 @@ public class Compiler implements
 		return null;
   }
   public Void visit(ESub p, Exp arg) {
-    emit(new Comment(PrettyPrinter.print(p)));
-    compile(p.exp_1, p.exp_2);
-    //emit(new Sub(arithExp(p.exp_1, p.exp_2)));
+    if(!(arg instanceof ESub))
+      compile(p.exp_1, arg);
+    else
+      compile(p.exp_1, p.exp_1);
+    compile(p.exp_2, p);
 		return null;
   }
   public Void visit(EMul p, Exp arg) {
