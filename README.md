@@ -33,20 +33,44 @@ which is a small fragment of C++ used in the course I mentioned above:
 
 Note: Only a subset of C is implemented, since all the features of C11 can not be fully utilized with the FLISP.
 # Datatypes
-  TODO
+| Datatype      | Description                   |
+|---------------|-------------------------------|
+| unsigned char | 8 bit unsigned value [0-255]  |
+| signed char   | 8 bit signed value [-127-126] |
+| int           | same as signed char           |
+| bool          | 1 bit value (true=1, false=0) |
+| string        | n+1 bit value (n=token)       |
 
 # Limitations
-  TODO
+  Functionality from the C language that will not be implemented or is unnecessary to implement will be listed here:
+  - No instructions for multiplication and division (could be implemented with functions)
+  - Including other files (.h files)
+
+# Not yet implemented
+  Functionality that is planned to be included will be listed here:
+  - Unary
+  - Function calls
+  - All bitwise operations (eg. a&b, a|b)
+  - String variables, literals and a subset of string operations
+  - all types are not implemented fully yet.
+  - I can not guarantee that complex expressions work.
+  - Branching implemented but not tested
+  - ..(and more)
 
 # Installation
 - Linux
   1. Download binary from git or make from source. (Making requires the dependencies that BNFC requires).
   2. Download digiflisp from [here](http://www.gbgmv.se/html/digiflisp.html). 
   3. Add QAflisp to PATH:  ```export PATH=$PATH:/usr/share/digiflisp/``` (to the folder where you install digiflisp).
-  4. Now the compiler chain should call the assembler after compilation.
+  4. Now the compiler chain should call the assembler after compilation. ```java Main <file.c>```
 
 - Windows
   Same as above but add QAflisp to Path environment variable, different procedure but should give same result.
 
 
 Note: I have only tested installing the compiler and running the compiler on Linux.
+
+# Build from source
+To build from source you need to have BNFC installed together with ANTLR4.
+While in the source folder run ```make```.
+
