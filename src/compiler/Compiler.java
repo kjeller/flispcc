@@ -148,7 +148,7 @@ public class Compiler implements
   }
 
   public Label newLabel() {
-    return new Label(nextLabel++);
+    return new IndexedLabel(nextLabel++);
   }
 
   public Type arithExp(Exp e1, Exp e2) {
@@ -231,7 +231,8 @@ public class Compiler implements
     }
 
     // Program starts here
-    emit(new Org(20));
+    if(p.id_.equals("main"))
+      emit(new Org(20));
 
     // Count local varible size to determine how much space on stack
     int varsize = getVarCount();
@@ -264,6 +265,8 @@ public class Compiler implements
       addGlobal(s.id_, s.type_);
       return null;
     }*/
+
+    //TODO: Move this to typechecker
     throw new RuntimeException("Only global declarations are allowed.");
   }
 
@@ -394,7 +397,8 @@ public class Compiler implements
   }
 
   public Void visit(SReturn p, Void arg) {
-    throw new RuntimeException("Not yet implemented");
+    emit(new Return());
+    return null;
   }
 
   /* ==================== Expressions ==================== */
@@ -561,7 +565,9 @@ public class Compiler implements
   }
 
   public Void visit(ECall p, Exp arg) {
-    throw new RuntimeException("Not yet implemented");
+    Label f = new IdLabel(p.id_);
+    emit(new Jsr(f));
+    return null;
   }
 
   /* Assign */

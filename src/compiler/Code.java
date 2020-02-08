@@ -36,13 +36,37 @@ class Func {
   }
 }
 
-class Label {
-  public int label;
-  public Label (int label) {
+/* For controlling program flow:
+ * A label can be added to a row to point
+ * to that specific address or can be used by 
+ * a Target to jump to a specific address. */
+abstract class Label {
+  abstract public String toString();
+}
+
+/* Label for functions. 
+ * Typechecker makes sure  this id is unique.
+ * */
+class IdLabel extends Label {
+  public String label;
+  public IdLabel(String label) {
     this.label = label;
   }
   public String toString() {
-    return "L" + label;
+    return label;
+  }
+}
+
+/* Label for local program flow.
+ * If-else and while statements use this.
+ * */
+class IndexedLabel extends Label {
+  public int index;
+  public IndexedLabel (int index) {
+    this.index = index;
+  }
+  public String toString() {
+    return "L" + index;
   }
 }
 
@@ -55,6 +79,7 @@ class Label {
  * */
 enum AddrMethod { IMMEDIATE, ABSOLUTE, NS, INHERENT }
 
+/* Assembler instructions represented by classes */
 abstract class Code {
   public <R> R accept (CodeVisitor<R> v) {
     return null;
@@ -365,6 +390,15 @@ class Bra extends Code {
     return v.visit(this);
   }
 }
+class Jsr extends Code {
+  public Label label;
+  public Jsr(Label label) {
+    this.label = label;
+  }
+  public <R> R accept(CodeVisitor<R> v) {
+    return v.visit(this);
+  }
+}
 
 interface CodeVisitor<R> { 
   public R visit(Comment c);
@@ -391,6 +425,7 @@ interface CodeVisitor<R> {
   public R visit(Blt c);
   public R visit(Bne c);
   public R visit(Bra c);
+  public R visit(Jsr c);
 }
 
 class CodeToAssembler implements CodeVisitor<String> {
@@ -513,5 +548,9 @@ class CodeToAssembler implements CodeVisitor<String> {
 
   public String visit(Bra c) {
     return String.format("BRA\t\t%s\n", c.label.toString());
+  }
+  
+  public String visit(Jsr c) {
+    return String.format("JSR\t\t%s\n", c.label.toString());
   }
 }
