@@ -6,6 +6,19 @@ import C.PrettyPrinter;
 import compiler.FunType;
 import compiler.Code;
 
+class Func {
+  public String id;
+  public FunType funcType;
+  public Func (String id, FunType funcType) {
+    this.id = id;
+    this.funcType = funcType;
+  }
+
+  public String toAssembly() {
+    return id + ":\n";
+  }
+}
+
 public class Compiler implements
   Program.Visitor<Void, Void>,
   Def.Visitor<Void, Void>,
@@ -83,8 +96,30 @@ public class Compiler implements
     }
     // Initialize global variable storage
     global = new TreeMap<>();
+    
+    LinkedList<String> savedOutput = output;
+    output = new LinkedList();
+
     // Start compiling program
     compile(p);
+
+    // Fetch new input and add to old
+    LinkedList<String> newOutput = output;
+    output = savedOutput; 
+
+    
+    // Global varibles declared here
+    if(getGlobVarCount() > 0) {
+      emit(new Org(0));
+      for(String key : global.keySet()) {
+        // This can be extended when strings are implemented (1 byte per character)
+        emit(new VarTarget(key, new Rmb(1)));
+      }
+      output.add("\n");
+    }
+
+    for(String s : newOutput)
+      output.add(s);
 
     // Concatenate strings in output to .j file content.
     StringBuilder jtext = new StringBuilder();
@@ -214,21 +249,10 @@ public class Compiler implements
 
     // Fetch new input and add to old
     LinkedList<String> newOutput = output;
-    output = savedOutput;
+    output = savedOutput; 
 
-    // Add to output
-    Func f = new Func(p.id_,  new FunType(p.type_, p.listarg_));
-    // TODO: do something with functions
-
-    // Global varibles declared here
-    if(getGlobVarCount() > 0) {
-      emit(new Org(0));
-      for(String key : global.keySet()) {
-        // This can be extended when strings are implemented (1 byte per character)
-        emit(new VarTarget(key, new Rmb(1)));
-      }
-      output.add("\n");
-    }
+    // Add label to subroutine
+    emit(new Target(new IdLabel(p.id_)));
 
     // Program starts here
     if(p.id_.equals("main"))
@@ -237,13 +261,18 @@ public class Compiler implements
     // Count local varible size to determine how much space on stack
     int varsize = getVarCount();
     if(varsize > 0)
-      emit(new Leasp(varsize)); //Add
+      emit(new Leasp(-varsize)); //Add
 
     for(String s : newOutput)
       output.add(s);
 
+    // Adjust stack after function
     if(varsize > 0)
       emit(new Leasp(varsize));
+
+    // Since main is entry point, we cannot use RTS
+    if(!p.id_.equals("main"))
+      emit(new Return());
     return null;
   }
 
@@ -396,8 +425,8 @@ public class Compiler implements
     return null;
   }
 
+  // Is added manually in DFunc visit 
   public Void visit(SReturn p, Void arg) {
-    emit(new Return());
     return null;
   }
 
@@ -566,6 +595,11 @@ public class Compiler implements
 
   public Void visit(ECall p, Exp arg) {
     Label f = new IdLabel(p.id_);
+    for(Exp e : p.listexp_) {
+      compile(e, e);
+      // Optimization: Could use registers when few arguments are used
+      emit(new Push("A"));
+    }
     emit(new Jsr(f));
     return null;
   }

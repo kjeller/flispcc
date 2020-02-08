@@ -27,15 +27,6 @@ class CtxEntry {
   }
 }
 
-class Func {
-  public String id;
-  public FunType funcType;
-  public Func (String id, FunType funcType) {
-    this.id = id;
-    this.funcType = funcType;
-  }
-}
-
 /* For controlling program flow:
  * A label can be added to a row to point
  * to that specific address or can be used by 
