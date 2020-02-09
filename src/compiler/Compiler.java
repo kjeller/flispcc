@@ -241,7 +241,6 @@ public class Compiler implements
     // Save output from extermination
     LinkedList<String> savedOutput = output;
     output = new LinkedList();
-
     for(Arg a : p.listarg_)
       compile(a);
     for(Stm s : p.liststm_)
@@ -303,8 +302,8 @@ public class Compiler implements
   public Void visit(ADecl p, Void arg) {
     addVar(p.id_, p.type_);
     CtxEntry entry = lookupVar(p.id_);
-    emit(new Comment(PrettyPrinter.print(p)));
-    emit(new Load(AddrMethod.NS, entry.addr));
+    //emit(new Comment(PrettyPrinter.print(p)));
+    //emit(new Load(AddrMethod.NS, entry.addr));
     return null;
    }
 
@@ -425,8 +424,9 @@ public class Compiler implements
     return null;
   }
 
-  // Is added manually in DFunc visit 
+  // Is added manually in DFunc visit() 
   public Void visit(SReturn p, Void arg) {
+    compile(p.exp_, p.exp_);
     return null;
   }
 
