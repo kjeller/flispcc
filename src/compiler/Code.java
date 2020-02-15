@@ -498,7 +498,7 @@ class CodeToAssembler implements CodeVisitor<String> {
   }
 
   public String visit(Org c) {
-    return String.format("ORG\t\t%d \n", c.address);
+    return String.format("ORG\t\t$%d \n", c.address);
   }
 
   public String visit(Rmb c) {
