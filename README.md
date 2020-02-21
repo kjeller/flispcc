@@ -41,6 +41,7 @@ Note: Only a subset of C is implemented, since all the features of C11 can not b
 | bool          | 1 bit value (true=1, false=0) |
 | string        | n+1 bit value (n=token)       |
 
+Note: only int implemented so far
 # Limitations
   Functionality from the C language that will not be implemented or is unnecessary to implement will be listed here:
   - No instructions for multiplication and division (could be implemented with functions)
